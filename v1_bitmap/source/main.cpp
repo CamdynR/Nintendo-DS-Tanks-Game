@@ -26,7 +26,7 @@ struct Pos {
 // Declarations
 const int CELL_SIZE = 16;
 void drawFrame(Pos &userPos, Pos &enemyPos, int keys, touchPosition &touchXY,
-               int frame);
+               int &frame);
 
 void drawStage(int stageNum);
 
