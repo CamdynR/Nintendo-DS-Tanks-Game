@@ -14,7 +14,7 @@ include $(DEVKITARM)/ds_rules
 # SOURCES is a list of directories containing source code
 # INCLUDES is a list of directories containing extra header files
 # DATA is a list of directories containing binary files embedded using bin2o
-# GRAPHICS is a list of directories containing image files to be converted with grit
+# BACKGROUNDS is a list of directories containing image files to be converted with grit
 # AUDIO is a list of directories containing audio to be converted by maxmod
 # ICON is the image used to create the game icon, leave blank to use default rule
 # NITRO is a directory that will be accessible via NitroFS
@@ -24,7 +24,7 @@ BUILD    := build
 SOURCES  := source
 INCLUDES := include
 DATA     :=
-GRAPHICS := gfx
+BACKGROUNDS := backgrounds
 AUDIO    :=
 ICON     :=
 SPRITES  :=  sprites
@@ -76,7 +76,7 @@ export OUTPUT := $(CURDIR)/$(TARGET)
 export VPATH := $(CURDIR)/$(subst /,,$(dir $(ICON)))\
                 $(foreach dir,$(SOURCES),$(CURDIR)/$(dir))\
                 $(foreach dir,$(DATA),$(CURDIR)/$(dir))\
-                $(foreach dir,$(GRAPHICS),$(CURDIR)/$(dir)) \
+                $(foreach dir,$(BACKGROUNDS),$(CURDIR)/$(dir)) \
                 $(foreach dir,$(SPRITES),$(CURDIR)/$(dir))
 
 export DEPSDIR := $(CURDIR)/$(BUILD)
@@ -84,7 +84,7 @@ export DEPSDIR := $(CURDIR)/$(BUILD)
 CFILES       := $(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
 CPPFILES     := $(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
 SFILES       := $(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
-PNGFILES     := $(foreach dir,$(GRAPHICS),$(notdir $(wildcard $(dir)/*.png)))
+PNGFILES     := $(foreach dir,$(BACKGROUNDS),$(notdir $(wildcard $(dir)/*.png)))
 BINFILES     := $(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*)))
 SPRITE_FILES :=  $(foreach dir, $(SPRITES),$(notdir $(wildcard $(dir)/*.png)))
 
@@ -190,7 +190,7 @@ $(SOUNDBANK) : $(MODFILES)
 # This rule creates assembly source files using grit
 # grit takes an image file and a .grit describing how the file is to be processed
 # add additional rules like this for each image extension
-# you use in the graphics folders
+# you use in the BACKGROUNDS folders
 #---------------------------------------------------------------------------------
 %.s %.h: %.png %.grit
 #---------------------------------------------------------------------------------
