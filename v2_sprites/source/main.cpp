@@ -12,6 +12,7 @@ Camdyn Rasque
 
 #include <nds.h>
 #include <unistd.h>
+#include "test-bg.h"
 
 //---------------------------------------------------------------------------------
 //
@@ -127,13 +128,30 @@ void handleInput(Tank &tank, int &keys) {
   if (validateInput(newPos, tank)) tank.pos.x = newPos.x;
 };
 
+void initBackground() {
+  // enable background 0 in 256 color mode with a 256x256 map
+	// BG_TILE_BASE changes the offset where tile data is stored
+	// BG_MAP_BASE gives the offset to the map data
+	BGCTRL[0] = BG_TILE_BASE(1) | BG_MAP_BASE(0) | BG_COLOR_256 | BG_32x32;
+
+  // use dma to copy the tile, map and palette data to VRAM
+	// CHAR_BASE_BLOCK gives us the actual address of the tile data
+	// SCREEN_BASE_BLOCK does the same thing for maps
+	// these should match the BG_TILE_BASE and BG_MAP base numbers above
+	dmaCopy(test_bgTiles,(void *)CHAR_BASE_BLOCK(1),test_bgTilesLen);
+	dmaCopy(test_bgMap,(void *)SCREEN_BASE_BLOCK(0),test_bgMapLen);
+	dmaCopy(test_bgPal,BG_PALETTE,test_bgPalLen);
+}
+
 /**
  * @brief Initializes the graphics system for 2D sprites.
  */
 void initGraphics() {
-  videoSetMode(MODE_0_2D);
-  vramSetBankA(VRAM_A_MAIN_SPRITE);
+  videoSetMode(MODE_0_2D | DISPLAY_BG0_ACTIVE);
+  vramSetBankA(VRAM_A_MAIN_BG); // In Mode 0 2D, BG MUST be in VRAM A
+  vramSetBankB(VRAM_B_MAIN_SPRITE); // Sprites can be used in VRAM B in this mode
   oamInit(&oamMain, SpriteMapping_1D_32, false);
+  initBackground();
 }
 
 /**
