@@ -34,7 +34,7 @@ struct Tank {
   u8 *frame_gfx;
 
   int state;
-  int anim_frame;
+  int anim_frame = 0;
 
   int height;
   int width;
@@ -55,6 +55,8 @@ const int MAX_TANKS = 2;
 const int TANK_SIZE = 16;
 const int CELL_SIZE = TANK_SIZE;
 Tank tanks[MAX_TANKS];
+
+void animateSprite(Tank *tank);
 
 //---------------------------------------------------------------------------------
 //
@@ -127,20 +129,41 @@ bool validateInput(Position &pos, Tank &tank) {
  */
 void handleInput(Tank &tank, int &keys) {
   Position newPos = tank.pos; // Copy current position
+  bool hasMoved = false;
 
   // Update user's up and down position
-  if (keys & KEY_UP) newPos.y -= 1;
-  if (keys & KEY_DOWN) newPos.y += 1;
+  if (keys & KEY_UP) {
+    newPos.y -= 1;
+    hasMoved = true;
+  }
+  if (keys & KEY_DOWN) {
+    hasMoved = true;
+    newPos.y += 1;
+  }
   if (validateInput(newPos, tank)) tank.pos.y = newPos.y;
 
   newPos = tank.pos; // Reset new position in case validation failed
 
   // Update user's left and right position
-  if (keys & KEY_LEFT) newPos.x -= 1;
-  if (keys & KEY_RIGHT) newPos.x += 1;
+  if (keys & KEY_LEFT) {
+    newPos.x -= 1;
+    hasMoved = true;
+  }
+  if (keys & KEY_RIGHT) {
+    newPos.x += 1;
+    hasMoved = true;
+  }
   if (validateInput(newPos, tank)) tank.pos.x = newPos.x;
+
+  if (hasMoved) {
+    // Animate the tank sprite
+    animateSprite(&tank);
+  }
 };
 
+/**
+ * Initialize and display the stage background for the game.
+ */
 void initBackground() {
   // enable background 0 in 256 color mode with a 256x256 map
   // BG_TILE_BASE changes the offset where tile data is stored
@@ -162,8 +185,7 @@ void initBackground() {
 void initGraphics() {
   videoSetMode(MODE_0_2D | DISPLAY_BG0_ACTIVE);
   vramSetBankA(VRAM_A_MAIN_BG); // In Mode 0 2D, BG MUST be in VRAM A
-  vramSetBankB(
-      VRAM_B_MAIN_SPRITE); // Sprites can be used in VRAM B in this mode
+  vramSetBankB(VRAM_B_MAIN_SPRITE); // Sprites can be used in VRAM B in this mode
   oamInit(&oamMain, SpriteMapping_1D_32, false);
   initBackground();
 }
@@ -173,24 +195,11 @@ void initGraphics() {
  * @return Pointer to allocated graphics memory.
  */
 void initSpriteGfx(Tank *tank, u8 *gfx) {
-  // u16 *gfx =
-  //     oamAllocateGfx(&oamMain, SpriteSize_16x16, SpriteColorFormat_256Color);
-
-  // // Assign each pixel the given color index (instead of always using 1)
-  // for (int i = 0; i < (TANK_SIZE * TANK_SIZE) / 2; i++) {
-  //   gfx[i] = paletteIndex | (paletteIndex << 8);
-  // }
-
+  // Allocate 16x16 sprite graphics memory
   tank->sprite_gfx_mem =
       oamAllocateGfx(&oamMain, SpriteSize_16x16, SpriteColorFormat_256Color);
-
-  tank->frame_gfx = (u8 *)gfx;
-}
-
-void animateTank(Tank *tank) {
-  int frame = tank->anim_frame + tank->state * 3;
-  u8 *offset = tank->frame_gfx + frame * 16 * 16;
-  dmaCopy(offset, tank->sprite_gfx_mem, 16 * 16);
+  // Copy the tank graphics to the allocated memory
+  tank->frame_gfx = gfx;
 }
 
 /**
@@ -223,13 +232,24 @@ void processInput(Tank &tank) {
 }
 
 /**
+ * @brief Animates the tank sprite based on its state.
+ * @param tank The tank to animate.
+ */
+ void animateSprite(Tank *tank) {
+  // Update the tank's animation frame
+  tank->anim_frame = (tank->anim_frame + 1) % 3;
+  u8*offset = tank->frame_gfx + tank->anim_frame * TANK_SIZE * TANK_SIZE;
+  dmaCopy(offset, tank->sprite_gfx_mem, TANK_SIZE * TANK_SIZE);
+}
+
+/**
  * @brief Updates sprite attributes for all tanks.
  * @param tanks Array of tanks to update.
  * @param numTanks Number of tanks in the array.
  */
 void updateSprites(Tank tanks[], int numTanks) {
   for (int i = 0; i < numTanks; i++) {
-    animateTank(&tanks[i]);
+    // Update the sprite's position
     oamSet(&oamMain, i, tanks[i].pos.x, tanks[i].pos.y, 0,
            i + 1, // Priority & palette index
            SpriteSize_16x16, SpriteColorFormat_256Color,
@@ -251,6 +271,9 @@ int main(void) {
   tanks[0] = createTank(CELL_SIZE, CELL_SIZE * 5.5);
   // Create the Enemy Tank
   tanks[1] = createTank(SCREEN_WIDTH - (CELL_SIZE * 2), CELL_SIZE);
+
+  animateSprite(&tanks[0]);
+  animateSprite(&tanks[1]);
 
   while (pmMainLoop()) {
     processInput(tanks[0]);
