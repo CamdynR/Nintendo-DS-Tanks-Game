@@ -91,19 +91,15 @@ void drawFrame(Pos &userPos, Pos &enemyPos, int keys, touchPosition &touchXY,
   Pos newPosY = userPos; // Position if only moving in Y direction
 
   // Try moving horizontally first
-  if (keys & KEY_RIGHT)
-    newPosX.x += moveVal;
-  if (keys & KEY_LEFT)
-    newPosX.x -= moveVal;
+  if (keys & KEY_RIGHT) newPosX.x += moveVal;
+  if (keys & KEY_LEFT) newPosX.x -= moveVal;
   if (!checkCollision(newPosX)) {
     userPos.x = newPosX.x;
   }
 
   // Then try moving vertically
-  if (keys & KEY_DOWN)
-    newPosY.y += moveVal;
-  if (keys & KEY_UP)
-    newPosY.y -= moveVal;
+  if (keys & KEY_DOWN) newPosY.y += moveVal;
+  if (keys & KEY_UP) newPosY.y -= moveVal;
   if (!checkCollision(newPosY)) {
     userPos.y = newPosY.y;
   }
@@ -115,15 +111,13 @@ void drawFrame(Pos &userPos, Pos &enemyPos, int keys, touchPosition &touchXY,
     newEnemyPosY.y += moveVal;
   if (enemyPos.dir == 4 || enemyPos.dir == 5 || enemyPos.dir == 6)
     newEnemyPosY.y -= moveVal;
-  if (!checkCollision(newEnemyPosY))
-    enemyPos.y = newEnemyPosY.y;
+  if (!checkCollision(newEnemyPosY)) enemyPos.y = newEnemyPosY.y;
 
   if (enemyPos.dir == 2 || enemyPos.dir == 3 || enemyPos.dir == 4)
     newEnemyPosX.x += moveVal;
   if (enemyPos.dir == 6 || enemyPos.dir == 7 || enemyPos.dir == 8)
     newEnemyPosX.x -= moveVal;
-  if (!checkCollision(newEnemyPosX))
-    enemyPos.x = newEnemyPosX.x;
+  if (!checkCollision(newEnemyPosX)) enemyPos.x = newEnemyPosX.x;
 
   // set up GL2D for 2d mode
   glBegin2D();
