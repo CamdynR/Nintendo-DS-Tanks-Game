@@ -27,6 +27,7 @@ DATA     :=
 GRAPHICS := gfx
 AUDIO    :=
 ICON     :=
+SPRITES  :=  sprites
 
 # specify a directory which contains the nitro filesystem
 # this is relative to the Makefile
@@ -75,15 +76,17 @@ export OUTPUT := $(CURDIR)/$(TARGET)
 export VPATH := $(CURDIR)/$(subst /,,$(dir $(ICON)))\
                 $(foreach dir,$(SOURCES),$(CURDIR)/$(dir))\
                 $(foreach dir,$(DATA),$(CURDIR)/$(dir))\
-                $(foreach dir,$(GRAPHICS),$(CURDIR)/$(dir))
+                $(foreach dir,$(GRAPHICS),$(CURDIR)/$(dir)) \
+                $(foreach dir,$(SPRITES),$(CURDIR)/$(dir))
 
 export DEPSDIR := $(CURDIR)/$(BUILD)
 
-CFILES   := $(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
-CPPFILES := $(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
-SFILES   := $(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
-PNGFILES := $(foreach dir,$(GRAPHICS),$(notdir $(wildcard $(dir)/*.png)))
-BINFILES := $(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*)))
+CFILES       := $(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
+CPPFILES     := $(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
+SFILES       := $(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
+PNGFILES     := $(foreach dir,$(GRAPHICS),$(notdir $(wildcard $(dir)/*.png)))
+BINFILES     := $(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*)))
+SPRITE_FILES :=  $(foreach dir, $(SPRITES),$(notdir $(wildcard $(dir)/*.png)))
 
 # prepare NitroFS directory
 ifneq ($(strip $(NITRO)),)
@@ -121,6 +124,7 @@ endif
 
 export OFILES   := $(addsuffix .o,$(BINFILES))\
                    $(PNGFILES:.png=.o)\
+                   $(SPRITE_FILES:.png=.o) \
                    $(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(SFILES:.s=.o)
 export INCLUDE  := $(foreach dir,$(INCLUDES),-iquote $(CURDIR)/$(dir))\
                    $(foreach dir,$(LIBDIRS),-I$(dir)/include)\
@@ -191,6 +195,12 @@ $(SOUNDBANK) : $(MODFILES)
 %.s %.h: %.png %.grit
 #---------------------------------------------------------------------------------
 	grit $< -fts -o$*
+
+# Convert sprites
+#---------------------------------------------------------------------------------
+%.s %.h : %.png
+	grit $< -ff../sprites/sprite.grit -o$*
+#---------------------------------------------------------------------------------
 
 #---------------------------------------------------------------------------------
 # Convert non-GRF game icon to GRF if needed

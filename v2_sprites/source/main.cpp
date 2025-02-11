@@ -12,7 +12,9 @@ Camdyn Rasque
 
 #include <nds.h>
 #include <unistd.h>
-#include "test-bg.h"
+
+#include "all-tanks.h"
+#include "stage-1.h"
 
 //---------------------------------------------------------------------------------
 //
@@ -27,10 +29,21 @@ struct Position {
 
 struct Tank {
   Position pos;
-  u16 *sprite;
+
+  u16 *sprite_gfx_mem;
+  u8 *frame_gfx;
+
+  int state;
+  int anim_frame;
+
   int height;
   int width;
 };
+
+//---------------------------------------------------------------------
+// The state of the sprite (which way it is walking)
+//---------------------------------------------------------------------
+enum SpriteState { W_UP = 0, W_RIGHT = 1, W_DOWN = 2, W_LEFT = 3 };
 
 //---------------------------------------------------------------------------------
 //
@@ -130,17 +143,17 @@ void handleInput(Tank &tank, int &keys) {
 
 void initBackground() {
   // enable background 0 in 256 color mode with a 256x256 map
-	// BG_TILE_BASE changes the offset where tile data is stored
-	// BG_MAP_BASE gives the offset to the map data
-	BGCTRL[0] = BG_TILE_BASE(1) | BG_MAP_BASE(0) | BG_COLOR_256 | BG_32x32;
+  // BG_TILE_BASE changes the offset where tile data is stored
+  // BG_MAP_BASE gives the offset to the map data
+  BGCTRL[0] = BG_TILE_BASE(1) | BG_MAP_BASE(0) | BG_COLOR_256 | BG_32x32;
 
   // use dma to copy the tile, map and palette data to VRAM
-	// CHAR_BASE_BLOCK gives us the actual address of the tile data
-	// SCREEN_BASE_BLOCK does the same thing for maps
-	// these should match the BG_TILE_BASE and BG_MAP base numbers above
-	dmaCopy(test_bgTiles,(void *)CHAR_BASE_BLOCK(1),test_bgTilesLen);
-	dmaCopy(test_bgMap,(void *)SCREEN_BASE_BLOCK(0),test_bgMapLen);
-	dmaCopy(test_bgPal,BG_PALETTE,test_bgPalLen);
+  // CHAR_BASE_BLOCK gives us the actual address of the tile data
+  // SCREEN_BASE_BLOCK does the same thing for maps
+  // these should match the BG_TILE_BASE and BG_MAP base numbers above
+  dmaCopy(stage_1Tiles, (void *)CHAR_BASE_BLOCK(1), stage_1TilesLen);
+  dmaCopy(stage_1Map, (void *)SCREEN_BASE_BLOCK(0), stage_1MapLen);
+  dmaCopy(stage_1Pal, BG_PALETTE, stage_1PalLen);
 }
 
 /**
@@ -149,26 +162,35 @@ void initBackground() {
 void initGraphics() {
   videoSetMode(MODE_0_2D | DISPLAY_BG0_ACTIVE);
   vramSetBankA(VRAM_A_MAIN_BG); // In Mode 0 2D, BG MUST be in VRAM A
-  vramSetBankB(VRAM_B_MAIN_SPRITE); // Sprites can be used in VRAM B in this mode
+  vramSetBankB(
+      VRAM_B_MAIN_SPRITE); // Sprites can be used in VRAM B in this mode
   oamInit(&oamMain, SpriteMapping_1D_32, false);
   initBackground();
 }
 
 /**
  * @brief Allocates and initializes sprite graphics.
- * @param paletteIndex The index of the color palette to use
  * @return Pointer to allocated graphics memory.
  */
-u16 *createSpriteGfx(int paletteIndex) {
-  u16 *gfx =
+void initSpriteGfx(Tank *tank, u8 *gfx) {
+  // u16 *gfx =
+  //     oamAllocateGfx(&oamMain, SpriteSize_16x16, SpriteColorFormat_256Color);
+
+  // // Assign each pixel the given color index (instead of always using 1)
+  // for (int i = 0; i < (TANK_SIZE * TANK_SIZE) / 2; i++) {
+  //   gfx[i] = paletteIndex | (paletteIndex << 8);
+  // }
+
+  tank->sprite_gfx_mem =
       oamAllocateGfx(&oamMain, SpriteSize_16x16, SpriteColorFormat_256Color);
 
-  // Assign each pixel the given color index (instead of always using 1)
-  for (int i = 0; i < (TANK_SIZE * TANK_SIZE) / 2; i++) {
-    gfx[i] = paletteIndex | (paletteIndex << 8);
-  }
+  tank->frame_gfx = (u8 *)gfx;
+}
 
-  return gfx;
+void animateTank(Tank *tank) {
+  int frame = tank->anim_frame + tank->state * 3;
+  u8 *offset = tank->frame_gfx + frame * 16 * 16;
+  dmaCopy(offset, tank->sprite_gfx_mem, 16 * 16);
 }
 
 /**
@@ -179,9 +201,13 @@ u16 *createSpriteGfx(int paletteIndex) {
  * @param paletteIndex The palette index to use for the tank
  * @return A new Tank instance.
  */
-Tank createTank(int x, int y, int color, int paletteIndex) {
-  SPRITE_PALETTE[paletteIndex] = color; // Set the correct color
-  return {{x, y}, createSpriteGfx(paletteIndex), TANK_SIZE, TANK_SIZE};
+Tank createTank(int x, int y) {
+  Tank tank = {{x, y}};
+  tank.height = TANK_SIZE;
+  tank.width = TANK_SIZE;
+  initSpriteGfx(&tank, (u8 *)all_tanksTiles);
+  dmaCopy(all_tanksPal, SPRITE_PALETTE, 512);
+  return tank;
 }
 
 /**
@@ -203,10 +229,11 @@ void processInput(Tank &tank) {
  */
 void updateSprites(Tank tanks[], int numTanks) {
   for (int i = 0; i < numTanks; i++) {
-    oamSet(&oamMain, i, tanks[i].pos.x, tanks[i].pos.y, // OAM index & position
-           0, i + 1, // Priority & palette index
+    animateTank(&tanks[i]);
+    oamSet(&oamMain, i, tanks[i].pos.x, tanks[i].pos.y, 0,
+           i + 1, // Priority & palette index
            SpriteSize_16x16, SpriteColorFormat_256Color,
-           tanks[i].sprite, // Graphics pointer
+           tanks[i].sprite_gfx_mem, // Graphics pointer
            -1, false, false, false, false, false);
   }
 }
@@ -221,10 +248,9 @@ int main(void) {
   initGraphics();
 
   // Create the Player Tank
-  tanks[0] = createTank(CELL_SIZE, CELL_SIZE * 5.5, RGB15(0, 31, 0), 1);
+  tanks[0] = createTank(CELL_SIZE, CELL_SIZE * 5.5);
   // Create the Enemy Tank
-  tanks[1] = createTank(SCREEN_WIDTH - (CELL_SIZE * 2), CELL_SIZE * 5.5,
-                        RGB15(31, 0, 0), 2);
+  tanks[1] = createTank(SCREEN_WIDTH - (CELL_SIZE * 2), CELL_SIZE);
 
   while (pmMainLoop()) {
     processInput(tanks[0]);
