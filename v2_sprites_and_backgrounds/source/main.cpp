@@ -18,7 +18,8 @@ Camdyn Rasque
 #include "calico/types.h"
 #include "nds/arm9/video.h"
 #include "red-tank.h"
-#include "wood_bg.h"
+#include "stage-1_bg.h"
+#include "stage-1.h"
 
 //---------------------------------------------------------------------------------
 //
@@ -117,6 +118,39 @@ bool noTanksCollided(Position &pos, Tank &tank) {
 }
 
 /**
+ * @brief Checks if the tank's position collides with any barriers in the stage.
+ *
+ * This function checks the tank's current position against the `STAGE_1` 2D array
+ * to determine if it collides with any barriers. The `STAGE_1` array contains
+ * 0's for open spaces and 1's for barriers.
+ *
+ * @param pos The position to check.
+ * @param tank The tank being moved (used to determine size).
+ * @return true if no collision occurs, false if a collision is detected.
+ * @return true if no collisions with barriers occur, false if a collision is detected.
+ */
+bool noBarrierCollisions(Position pos, Tank &tank) {
+  // Check each corner of the tank for collisions with barriers
+  int x1 = pos.x;
+  int y1 = pos.y;
+  int x2 = pos.x + tank.width - 1;
+  int y2 = pos.y + tank.height - 1;
+
+  // Ensure the tank is within the bounds of the stage
+  if (x1 < 0 || y1 < 0 || x2 >= SCREEN_WIDTH || y2 >= SCREEN_HEIGHT) {
+    return false; // Out of bounds, treat as a collision
+  }
+
+  // Check the four corners of the tank for barrier collisions
+  if (STAGE_1[y1][x1] == 1 || STAGE_1[y1][x2] == 1 ||
+      STAGE_1[y2][x1] == 1 || STAGE_1[y2][x2] == 1) {
+    return false; // Collision detected
+  }
+
+  return true; // No collisions with barriers
+}
+
+/**
  * @brief Validates if a given position is allowed based on screen bounds and
  * collisions.
  *
@@ -128,7 +162,7 @@ bool noTanksCollided(Position &pos, Tank &tank) {
  * @return true if the position is valid, false otherwise.
  */
 bool validateInput(Position &pos, Tank &tank) {
-  return isWithinBounds(pos, tank) && noTanksCollided(pos, tank);
+  return isWithinBounds(pos, tank) && noTanksCollided(pos, tank) && noBarrierCollisions(pos, tank);
 }
 
 /**
@@ -201,9 +235,9 @@ void initBackground() {
   // CHAR_BASE_BLOCK gives us the actual address of the tile data
   // SCREEN_BASE_BLOCK does the same thing for maps
   // these should match the BG_TILE_BASE and BG_MAP base numbers above
-  dmaCopy(wood_bgTiles, (void *)CHAR_BASE_BLOCK(1), wood_bgTilesLen);
-  dmaCopy(wood_bgMap, (void *)SCREEN_BASE_BLOCK(0), wood_bgMapLen);
-  dmaCopy(wood_bgPal, BG_PALETTE, wood_bgPalLen);
+  dmaCopy(stage_1_bgTiles, (void *)CHAR_BASE_BLOCK(1), stage_1_bgTilesLen);
+  dmaCopy(stage_1_bgMap, (void *)SCREEN_BASE_BLOCK(0), stage_1_bgMapLen);
+  dmaCopy(stage_1_bgPal, BG_PALETTE, stage_1_bgPalLen);
 }
 
 /**
@@ -329,7 +363,7 @@ void updateSprites(Tank tanks[], int numTanks) {
     oamRotateScale(&oamMain, i, degreesToAngle(angle), 256, 256);
 
     // Update the tank sprite's position
-    oamSet(&oamMain, i, tanks[i].pos.x, tanks[i].pos.y, 0,
+    oamSet(&oamMain, i, tanks[i].pos.x - 8, tanks[i].pos.y - 8, 0,
            i + 1, // Priority & palette index
            SpriteSize_32x32, SpriteColorFormat_256Color,
            tanks[i].body_gfx_mem, // Graphics pointer
