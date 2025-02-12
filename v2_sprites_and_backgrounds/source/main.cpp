@@ -10,16 +10,19 @@ Camdyn Rasque
 //
 //---------------------------------------------------------------------------------
 
+#include <gl2d.h>
+#include <math.h>
 #include <nds.h>
 #include <unistd.h>
 
-// #include "blue-tank-turret.h"
-// #include "blue-tank.h"
+#include "blue-tank-turret.h"
+#include "blue-tank.h"
 #include "calico/types.h"
+#include "nds/arm9/background.h"
 #include "nds/arm9/video.h"
-// #include "red-tank.h"
-#include "stage-1_bg.h"
+#include "red-tank.h"
 #include "stage-1.h"
+#include "stage-1_bg.h"
 
 //---------------------------------------------------------------------------------
 //
@@ -49,6 +52,8 @@ struct Tank {
 
   // 0 = N, 1 = NE, 2 = E, 3 = SE, 4 = S, 5 = SW, 6 = W, 7 = NW
   int direction = 0;
+
+  float turret_angle = 0; // Add this field to store the turret's rotation angle
 };
 
 //---------------------------------------------------------------------
@@ -74,6 +79,21 @@ void animateSprite(Tank *tank);
 // HELPER FUNCTIONS
 //
 //---------------------------------------------------------------------------------
+
+/**
+ * @brief Calculates the angle between two points.
+ * @param x1 The x-coordinate of the first point.
+ * @param y1 The y-coordinate of the first point.
+ * @param x2 The x-coordinate of the second point.
+ * @param y2 The y-coordinate of the second point.
+ * @return The angle in degrees.
+ */
+float calculateAngle(int x1, int y1, int x2, int y2) {
+  float deltaX = x2 - x1;
+  float deltaY = y2 - y1;
+  float angle = atan2(deltaY, deltaX) * (180.0 / M_PI);
+  return angle < 0 ? angle + 360 : angle;
+}
 
 /**
  * @brief Checks if the given position is within the screen bounds.
@@ -120,14 +140,15 @@ bool noTanksCollided(Position &pos, Tank &tank) {
 /**
  * @brief Checks if the tank's position collides with any barriers in the stage.
  *
- * This function checks the tank's current position against the `STAGE_1` 2D array
- * to determine if it collides with any barriers. The `STAGE_1` array contains
- * 0's for open spaces and 1's for barriers.
+ * This function checks the tank's current position against the `STAGE_1` 2D
+ * array to determine if it collides with any barriers. The `STAGE_1` array
+ * contains 0's for open spaces and 1's for barriers.
  *
  * @param pos The position to check.
  * @param tank The tank being moved (used to determine size).
  * @return true if no collision occurs, false if a collision is detected.
- * @return true if no collisions with barriers occur, false if a collision is detected.
+ * @return true if no collisions with barriers occur, false if a collision is
+ * detected.
  */
 bool noBarrierCollisions(Position pos, Tank &tank) {
   // Check each corner of the tank for collisions with barriers
@@ -142,8 +163,8 @@ bool noBarrierCollisions(Position pos, Tank &tank) {
   }
 
   // Check the four corners of the tank for barrier collisions
-  if (STAGE_1[y1][x1] == 1 || STAGE_1[y1][x2] == 1 ||
-      STAGE_1[y2][x1] == 1 || STAGE_1[y2][x2] == 1) {
+  if (STAGE_1[y1][x1] == 1 || STAGE_1[y1][x2] == 1 || STAGE_1[y2][x1] == 1 ||
+      STAGE_1[y2][x2] == 1) {
     return false; // Collision detected
   }
 
@@ -162,7 +183,8 @@ bool noBarrierCollisions(Position pos, Tank &tank) {
  * @return true if the position is valid, false otherwise.
  */
 bool validateInput(Position &pos, Tank &tank) {
-  return isWithinBounds(pos, tank) && noTanksCollided(pos, tank) && noBarrierCollisions(pos, tank);
+  return isWithinBounds(pos, tank) && noTanksCollided(pos, tank) &&
+         noBarrierCollisions(pos, tank);
 }
 
 /**
@@ -229,8 +251,8 @@ void initBackground() {
   // enable background 0 in 256 color mode with a 256x256 map
   // BG_TILE_BASE changes the offset where tile data is stored
   // BG_MAP_BASE gives the offset to the map data
-  BGCTRL[0] = BG_TILE_BASE(1) | BG_MAP_BASE(0) | BG_COLOR_256 | BG_32x32;
-
+  BGCTRL[0] = BG_TILE_BASE(1) | BG_MAP_BASE(0) | BG_COLOR_256 | BG_32x32 |
+              BG_PRIORITY_3;
 
   // Load the correct palette for the background BEFORE sprite palette
   dmaCopy(stage_1_bgPal, BG_PALETTE, stage_1_bgPalLen);
@@ -244,10 +266,10 @@ void initBackground() {
   dmaCopy(stage_1_bgMap, (void *)SCREEN_BASE_BLOCK(0), stage_1_bgMapLen);
 }
 
-// void initSprites() {
-//   // Load sprite palette AFTER background palette
-//   dmaCopy(blue_tankPal, SPRITE_PALETTE, blue_tankPalLen);
-// }
+void initSprites() {
+  // Load sprite palette AFTER background palette
+  dmaCopy(blue_tankPal, SPRITE_PALETTE, blue_tankPalLen);
+}
 
 /**
  * @brief Initializes the graphics system for 2D sprites.
@@ -259,32 +281,33 @@ void initGraphics() {
       VRAM_B_MAIN_SPRITE); // Sprites can be used in VRAM B in this mode
   oamInit(&oamMain, SpriteMapping_1D_32, false);
   initBackground();
-  // initSprites();
+  initSprites();
+  glScreen2D();
 }
 
 /**
  * @brief Allocates and initializes sprite graphics.
  * @return Pointer to allocated graphics memory.
  */
-// void initTankBodyGfx(Tank *tank, u8 *gfx) {
-//   // Allocate 16x16 sprite graphics memory
-//   tank->body_gfx_mem =
-//       oamAllocateGfx(&oamMain, SpriteSize_32x32, SpriteColorFormat_256Color);
-//   // Set the body_frame_gfx pointer to the start of the sprite sheet
-//   tank->body_frame_gfx = gfx;
-// }
+void initTankBodyGfx(Tank *tank, u8 *gfx) {
+  // Allocate 16x16 sprite graphics memory
+  tank->body_gfx_mem =
+      oamAllocateGfx(&oamMain, SpriteSize_32x32, SpriteColorFormat_256Color);
+  // Set the body_frame_gfx pointer to the start of the sprite sheet
+  tank->body_frame_gfx = gfx;
+}
 
 /**
  * @brief Allocates and initializes sprite graphics.
  * @return Pointer to allocated graphics memory.
  */
-// void initTankTurretGfx(Tank *tank, u8 *gfx) {
-//   // Allocate 16x16 sprite graphics memory
-//   tank->turret_gfx_mem =
-//       oamAllocateGfx(&oamMain, SpriteSize_32x32, SpriteColorFormat_256Color);
-//   // Set the turret_frame_gfx pointer to the start of the sprite sheet
-//   tank->turret_frame_gfx = gfx;
-// }
+void initTankTurretGfx(Tank *tank, u8 *gfx) {
+  // Allocate 16x16 sprite graphics memory
+  tank->turret_gfx_mem =
+      oamAllocateGfx(&oamMain, SpriteSize_32x32, SpriteColorFormat_256Color);
+  // Set the turret_frame_gfx pointer to the start of the sprite sheet
+  tank->turret_frame_gfx = gfx;
+}
 
 /**
  * @brief Creates a tank at the specified position.
@@ -293,22 +316,22 @@ void initGraphics() {
  * @param color The color of the tank (0 = blue, 1 = red)
  * @return A new Tank instance.
  */
-// Tank createTank(int x, int y, int color) {
-//   Tank tank = {{x, y}};
-//   tank.height = TANK_SIZE;
-//   tank.width = TANK_SIZE;
-//   tank.color = color;
+Tank createTank(int x, int y, int color) {
+  Tank tank = {{x, y}};
+  tank.height = TANK_SIZE;
+  tank.width = TANK_SIZE;
+  tank.color = color;
 
-//   initTankBodyGfx(&tank, (u8 *)blue_tankTiles);
-//   // initTankTurretGfx(&tank, (u8 *)blue_tank_turretTiles);
-//   dmaCopy(blue_tankPal, SPRITE_PALETTE, 512);
-//   // if (color == T_BLUE) {
-//   // } else if (color == T_RED) {
-//   //   initTankBodyGfx(&tank, (u8 *)red_tankTiles);
-//   //   dmaCopy(red_tankPal, SPRITE_PALETTE, 512);
-//   // }
-//   return tank;
-// }
+  if (color == T_BLUE) {
+    initTankBodyGfx(&tank, (u8 *)blue_tankTiles);
+    initTankTurretGfx(&tank, (u8 *)blue_tank_turretTiles);
+    // dmaCopy(blue_tankPal, SPRITE_PALETTE, 512);
+  } else if (color == T_RED) {
+    //   initTankBodyGfx(&tank, (u8 *)red_tankTiles);
+    //   dmaCopy(red_tankPal, SPRITE_PALETTE, 512);
+  }
+  return tank;
+}
 
 /**
  * @brief Processes user input and updates tank positions.
@@ -316,10 +339,31 @@ void initGraphics() {
  * @param numTanks Number of tanks in the array.
  */
 void processInput(Tank &tank) {
+  // Button Input
   scanKeys();
   int keys = keysHeld();
-
+  // Handle directional button input
   handleInput(tank, keys);
+
+  // Touch Input
+  touchPosition touch;
+  touchRead(&touch);
+  // Handle touch input
+  if (keys & KEY_TOUCH) {
+    float angle =
+        calculateAngle(tank.pos.x - 16, tank.pos.y - 16, touch.px, touch.py);
+    tank.turret_angle = 270 - angle; // Update turret angle based on touch input
+
+    if (touch.rawx != 0 && touch.rawy != 0) {
+      // Show the user's touch on screen
+      // Horizontal Line
+      glBegin2D();
+      glLine(touch.px - 2, touch.py, touch.px + 2, touch.py, RGB15(16, 25, 28));
+      // Vertical Line
+      glLine(touch.px, touch.py - 2, touch.px, touch.py + 2, RGB15(16, 25, 28));
+      glEnd2D();
+    }
+  }
 }
 
 /**
@@ -332,6 +376,7 @@ void animateSprite(Tank *tank) {
   u8 *offset = tank->body_frame_gfx + frame * 32 * 32;
 
   dmaCopy(offset, tank->body_gfx_mem, 32 * 32);
+  dmaCopy(tank->turret_frame_gfx, tank->turret_gfx_mem, 32 * 32);
 }
 
 /**
@@ -373,18 +418,20 @@ void updateSprites(Tank tanks[], int numTanks) {
     oamRotateScale(&oamMain, i, degreesToAngle(angle), 256, 256);
 
     // Update the tank sprite's position
-    oamSet(&oamMain, i, tanks[i].pos.x - 8, tanks[i].pos.y - 8, 0,
-           i + 1, // Priority & palette index
+    oamSet(&oamMain, i, tanks[i].pos.x - 8, tanks[i].pos.y - 8, 1, i,
            SpriteSize_32x32, SpriteColorFormat_256Color,
            tanks[i].body_gfx_mem, // Graphics pointer
            i, false, false, false, false, false);
 
+    // Apply rotation to the turret
+    oamRotateScale(&oamMain, i + MAX_TANKS,
+                   degreesToAngle(tanks[i].turret_angle), 256, 256);
+
     // Update the turret sprite's position
-    // oamSet(&oamMain, i + MAX_TANKS, tanks[i].pos.x, tanks[i].pos.y, 0,
-    //        i + 1, // Priority & palette index
-    //        SpriteSize_32x32, SpriteColorFormat_256Color,
-    //        tanks[i].turret_gfx_mem, // Graphics pointer
-    //        -1, false, false, false, false, false);
+    oamSet(&oamMain, i + MAX_TANKS, tanks[i].pos.x - 8, tanks[i].pos.y - 8, 0,
+           i + 1, SpriteSize_32x32, SpriteColorFormat_256Color,
+           tanks[i].turret_gfx_mem, // Graphics pointer
+           i + MAX_TANKS, false, false, false, false, false);
   }
 }
 
@@ -398,17 +445,17 @@ int main(void) {
   initGraphics();
 
   // Create the Player Tank
-  // tanks[0] = createTank(CELL_SIZE, CELL_SIZE * 5.5, T_BLUE);
+  tanks[0] = createTank(CELL_SIZE, CELL_SIZE * 5.5, T_BLUE);
   // Create the Enemy Tank
   // tanks[1] = createTank(SCREEN_WIDTH - (CELL_SIZE * 2), CELL_SIZE * 5.5,
   // T_RED);
 
-  // animateSprite(&tanks[0]);
+  animateSprite(&tanks[0]);
   // animateSprite(&tanks[1]);
 
   while (pmMainLoop()) {
     processInput(tanks[0]);
-    // updateSprites(tanks, 1);
+    updateSprites(tanks, 1);
 
     swiWaitForVBlank();
     oamUpdate(&oamMain);
