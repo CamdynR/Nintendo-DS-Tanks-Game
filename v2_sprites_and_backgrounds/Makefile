@@ -192,13 +192,13 @@ $(SOUNDBANK) : $(MODFILES)
 # add additional rules like this for each image extension
 # you use in the BACKGROUNDS folders
 #---------------------------------------------------------------------------------
-%.s %.h: %.png %.grit
+%.s %.h : backgrounds/%.png
 #---------------------------------------------------------------------------------
-	grit $< -fts -o$*
+	grit $< -ff../backgrounds/background.grit -o$*
 
 # Convert sprites
 #---------------------------------------------------------------------------------
-%.s %.h : %.png
+%.s %.h : sprites/%.png
 	grit $< -ff../sprites/sprite.grit -o$*
 #---------------------------------------------------------------------------------
 

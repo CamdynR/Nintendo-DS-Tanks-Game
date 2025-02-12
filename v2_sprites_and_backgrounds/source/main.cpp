@@ -13,8 +13,10 @@ Camdyn Rasque
 #include <nds.h>
 #include <unistd.h>
 
-#include "all-tanks.h"
-#include "stage-1.h"
+#include "blue-tank.h"
+#include "nds/arm9/video.h"
+#include "red-tank.h"
+#include "wood_bg.h"
 
 //---------------------------------------------------------------------------------
 //
@@ -157,7 +159,7 @@ void handleInput(Tank &tank, int &keys) {
 
   if (hasMoved) {
     // Animate the tank sprite
-    tank.anim_frame = (tank.anim_frame + 1) % 3;
+    // tank.anim_frame = (tank.anim_frame + 1) % 3;
     animateSprite(&tank);
   }
 };
@@ -175,9 +177,9 @@ void initBackground() {
   // CHAR_BASE_BLOCK gives us the actual address of the tile data
   // SCREEN_BASE_BLOCK does the same thing for maps
   // these should match the BG_TILE_BASE and BG_MAP base numbers above
-  dmaCopy(stage_1Tiles, (void *)CHAR_BASE_BLOCK(1), stage_1TilesLen);
-  dmaCopy(stage_1Map, (void *)SCREEN_BASE_BLOCK(0), stage_1MapLen);
-  dmaCopy(stage_1Pal, BG_PALETTE, stage_1PalLen);
+  dmaCopy(wood_bgTiles, (void *)CHAR_BASE_BLOCK(1), wood_bgTilesLen);
+  dmaCopy(wood_bgMap, (void *)SCREEN_BASE_BLOCK(0), wood_bgMapLen);
+  dmaCopy(wood_bgPal, BG_PALETTE, wood_bgPalLen);
 }
 
 /**
@@ -186,7 +188,8 @@ void initBackground() {
 void initGraphics() {
   videoSetMode(MODE_0_2D | DISPLAY_BG0_ACTIVE);
   vramSetBankA(VRAM_A_MAIN_BG); // In Mode 0 2D, BG MUST be in VRAM A
-  vramSetBankB(VRAM_B_MAIN_SPRITE); // Sprites can be used in VRAM B in this mode
+  vramSetBankB(
+      VRAM_B_MAIN_SPRITE); // Sprites can be used in VRAM B in this mode
   oamInit(&oamMain, SpriteMapping_1D_32, false);
   initBackground();
 }
@@ -199,7 +202,7 @@ void initSpriteGfx(Tank *tank, u8 *gfx) {
   // Allocate 16x16 sprite graphics memory
   tank->sprite_gfx_mem =
       oamAllocateGfx(&oamMain, SpriteSize_16x16, SpriteColorFormat_256Color);
-  // Copy the tank graphics to the allocated memory
+  // Set the frame_gfx pointer to the start of the sprite sheet
   tank->frame_gfx = gfx;
 }
 
@@ -215,8 +218,13 @@ Tank createTank(int x, int y, int color) {
   tank.height = TANK_SIZE;
   tank.width = TANK_SIZE;
   tank.color = color;
-  initSpriteGfx(&tank, (u8 *)all_tanksTiles);
-  dmaCopy(all_tanksPal, SPRITE_PALETTE, 512);
+  if (color == T_BLUE) {
+    initSpriteGfx(&tank, (u8 *)blue_tankTiles);
+    dmaCopy(blue_tankPal, SPRITE_PALETTE, 512);
+  } else if (color == T_RED) {
+    initSpriteGfx(&tank, (u8 *)red_tankTiles);
+    dmaCopy(red_tankPal, SPRITE_PALETTE, 512);
+  }
   return tank;
 }
 
@@ -236,13 +244,10 @@ void processInput(Tank &tank) {
  * @brief Animates the tank sprite based on its state.
  * @param tank The tank to animate.
  */
- void animateSprite(Tank *tank) {
-  // Update the tank's animation frame
-  // tank->anim_frame = (tank->anim_frame + 1) % 3;
-  // u8*offset = tank->frame_gfx + tank->anim_frame * TANK_SIZE * TANK_SIZE;
-
-  int frame = tank->anim_frame + (tank->color * 3);
-	u8* offset = tank->frame_gfx + frame * (TANK_SIZE * TANK_SIZE);
+void animateSprite(Tank *tank) {
+  int frame = tank->anim_frame;
+  // Calculate the offset correctly for a 48x16 sprite with 3 frames
+  u8 *offset = tank->frame_gfx + frame * TANK_SIZE;
 
   dmaCopy(offset, tank->sprite_gfx_mem, TANK_SIZE * TANK_SIZE);
 }
@@ -275,14 +280,15 @@ int main(void) {
   // Create the Player Tank
   tanks[0] = createTank(CELL_SIZE, CELL_SIZE * 5.5, T_BLUE);
   // Create the Enemy Tank
-  tanks[1] = createTank(SCREEN_WIDTH - (CELL_SIZE * 2), CELL_SIZE, T_RED);
+  // tanks[1] = createTank(SCREEN_WIDTH - (CELL_SIZE * 2), CELL_SIZE * 5.5,
+  // T_RED);
 
   animateSprite(&tanks[0]);
-  animateSprite(&tanks[1]);
+  // animateSprite(&tanks[1]);
 
   while (pmMainLoop()) {
     processInput(tanks[0]);
-    updateSprites(tanks, MAX_TANKS);
+    updateSprites(tanks, 1);
 
     swiWaitForVBlank();
     oamUpdate(&oamMain);
