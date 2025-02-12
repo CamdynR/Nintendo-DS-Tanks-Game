@@ -15,12 +15,11 @@ Camdyn Rasque
 #include <nds.h>
 #include <unistd.h>
 
+#include "all-tanks.h"
 #include "blue-tank-turret.h"
-#include "blue-tank.h"
 #include "calico/types.h"
 #include "nds/arm9/background.h"
 #include "nds/arm9/video.h"
-#include "red-tank.h"
 #include "stage-1.h"
 #include "stage-1_bg.h"
 
@@ -268,7 +267,7 @@ void initBackground() {
 
 void initSprites() {
   // Load sprite palette AFTER background palette
-  dmaCopy(blue_tankPal, SPRITE_PALETTE, blue_tankPalLen);
+  dmaCopy(all_tanksPal, SPRITE_PALETTE, all_tanksPalLen);
 }
 
 /**
@@ -323,9 +322,9 @@ Tank createTank(int x, int y, int color) {
   tank.color = color;
 
   if (color == T_BLUE) {
-    initTankBodyGfx(&tank, (u8 *)blue_tankTiles);
+    initTankBodyGfx(&tank, (u8 *)all_tanksTiles);
     initTankTurretGfx(&tank, (u8 *)blue_tank_turretTiles);
-    // dmaCopy(blue_tankPal, SPRITE_PALETTE, 512);
+    // dmaCopy(all_tanksPal, SPRITE_PALETTE, 512);
   } else if (color == T_RED) {
     //   initTankBodyGfx(&tank, (u8 *)red_tankTiles);
     //   dmaCopy(red_tankPal, SPRITE_PALETTE, 512);
@@ -371,7 +370,7 @@ void processInput(Tank &tank) {
  * @param tank The tank to animate.
  */
 void animateSprite(Tank *tank) {
-  int frame = tank->anim_frame;
+  int frame = tank->anim_frame + tank->color;
   // Calculate the offset correctly for a 48x16 sprite with 3 frames
   u8 *offset = tank->body_frame_gfx + frame * 32 * 32;
 
