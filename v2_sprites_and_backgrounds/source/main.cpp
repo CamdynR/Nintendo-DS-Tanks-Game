@@ -13,11 +13,11 @@ Camdyn Rasque
 #include <nds.h>
 #include <unistd.h>
 
-#include "blue-tank-turret.h"
-#include "blue-tank.h"
+// #include "blue-tank-turret.h"
+// #include "blue-tank.h"
 #include "calico/types.h"
 #include "nds/arm9/video.h"
-#include "red-tank.h"
+// #include "red-tank.h"
 #include "stage-1_bg.h"
 #include "stage-1.h"
 
@@ -231,14 +231,23 @@ void initBackground() {
   // BG_MAP_BASE gives the offset to the map data
   BGCTRL[0] = BG_TILE_BASE(1) | BG_MAP_BASE(0) | BG_COLOR_256 | BG_32x32;
 
+
+  // Load the correct palette for the background BEFORE sprite palette
+  dmaCopy(stage_1_bgPal, BG_PALETTE, stage_1_bgPalLen);
+
+  // Copy tile and map data to VRAM
   // use dma to copy the tile, map and palette data to VRAM
   // CHAR_BASE_BLOCK gives us the actual address of the tile data
   // SCREEN_BASE_BLOCK does the same thing for maps
   // these should match the BG_TILE_BASE and BG_MAP base numbers above
   dmaCopy(stage_1_bgTiles, (void *)CHAR_BASE_BLOCK(1), stage_1_bgTilesLen);
   dmaCopy(stage_1_bgMap, (void *)SCREEN_BASE_BLOCK(0), stage_1_bgMapLen);
-  dmaCopy(stage_1_bgPal, BG_PALETTE, stage_1_bgPalLen);
 }
+
+// void initSprites() {
+//   // Load sprite palette AFTER background palette
+//   dmaCopy(blue_tankPal, SPRITE_PALETTE, blue_tankPalLen);
+// }
 
 /**
  * @brief Initializes the graphics system for 2D sprites.
@@ -250,31 +259,32 @@ void initGraphics() {
       VRAM_B_MAIN_SPRITE); // Sprites can be used in VRAM B in this mode
   oamInit(&oamMain, SpriteMapping_1D_32, false);
   initBackground();
+  // initSprites();
 }
 
 /**
  * @brief Allocates and initializes sprite graphics.
  * @return Pointer to allocated graphics memory.
  */
-void initTankBodyGfx(Tank *tank, u8 *gfx) {
-  // Allocate 16x16 sprite graphics memory
-  tank->body_gfx_mem =
-      oamAllocateGfx(&oamMain, SpriteSize_32x32, SpriteColorFormat_256Color);
-  // Set the body_frame_gfx pointer to the start of the sprite sheet
-  tank->body_frame_gfx = gfx;
-}
+// void initTankBodyGfx(Tank *tank, u8 *gfx) {
+//   // Allocate 16x16 sprite graphics memory
+//   tank->body_gfx_mem =
+//       oamAllocateGfx(&oamMain, SpriteSize_32x32, SpriteColorFormat_256Color);
+//   // Set the body_frame_gfx pointer to the start of the sprite sheet
+//   tank->body_frame_gfx = gfx;
+// }
 
 /**
  * @brief Allocates and initializes sprite graphics.
  * @return Pointer to allocated graphics memory.
  */
-void initTankTurretGfx(Tank *tank, u8 *gfx) {
-  // Allocate 16x16 sprite graphics memory
-  tank->turret_gfx_mem =
-      oamAllocateGfx(&oamMain, SpriteSize_32x32, SpriteColorFormat_256Color);
-  // Set the turret_frame_gfx pointer to the start of the sprite sheet
-  tank->turret_frame_gfx = gfx;
-}
+// void initTankTurretGfx(Tank *tank, u8 *gfx) {
+//   // Allocate 16x16 sprite graphics memory
+//   tank->turret_gfx_mem =
+//       oamAllocateGfx(&oamMain, SpriteSize_32x32, SpriteColorFormat_256Color);
+//   // Set the turret_frame_gfx pointer to the start of the sprite sheet
+//   tank->turret_frame_gfx = gfx;
+// }
 
 /**
  * @brief Creates a tank at the specified position.
@@ -283,22 +293,22 @@ void initTankTurretGfx(Tank *tank, u8 *gfx) {
  * @param color The color of the tank (0 = blue, 1 = red)
  * @return A new Tank instance.
  */
-Tank createTank(int x, int y, int color) {
-  Tank tank = {{x, y}};
-  tank.height = TANK_SIZE;
-  tank.width = TANK_SIZE;
-  tank.color = color;
+// Tank createTank(int x, int y, int color) {
+//   Tank tank = {{x, y}};
+//   tank.height = TANK_SIZE;
+//   tank.width = TANK_SIZE;
+//   tank.color = color;
 
-  if (color == T_BLUE) {
-    initTankBodyGfx(&tank, (u8 *)blue_tankTiles);
-    initTankTurretGfx(&tank, (u8 *)blue_tank_turretTiles);
-    dmaCopy(blue_tankPal, SPRITE_PALETTE, 512);
-  } else if (color == T_RED) {
-    initTankBodyGfx(&tank, (u8 *)red_tankTiles);
-    dmaCopy(red_tankPal, SPRITE_PALETTE, 512);
-  }
-  return tank;
-}
+//   initTankBodyGfx(&tank, (u8 *)blue_tankTiles);
+//   // initTankTurretGfx(&tank, (u8 *)blue_tank_turretTiles);
+//   dmaCopy(blue_tankPal, SPRITE_PALETTE, 512);
+//   // if (color == T_BLUE) {
+//   // } else if (color == T_RED) {
+//   //   initTankBodyGfx(&tank, (u8 *)red_tankTiles);
+//   //   dmaCopy(red_tankPal, SPRITE_PALETTE, 512);
+//   // }
+//   return tank;
+// }
 
 /**
  * @brief Processes user input and updates tank positions.
@@ -370,11 +380,11 @@ void updateSprites(Tank tanks[], int numTanks) {
            i, false, false, false, false, false);
 
     // Update the turret sprite's position
-    oamSet(&oamMain, i + MAX_TANKS, tanks[i].pos.x, tanks[i].pos.y, 0,
-           i + 1, // Priority & palette index
-           SpriteSize_32x32, SpriteColorFormat_256Color,
-           tanks[i].turret_gfx_mem, // Graphics pointer
-           -1, false, false, false, false, false);
+    // oamSet(&oamMain, i + MAX_TANKS, tanks[i].pos.x, tanks[i].pos.y, 0,
+    //        i + 1, // Priority & palette index
+    //        SpriteSize_32x32, SpriteColorFormat_256Color,
+    //        tanks[i].turret_gfx_mem, // Graphics pointer
+    //        -1, false, false, false, false, false);
   }
 }
 
@@ -388,17 +398,17 @@ int main(void) {
   initGraphics();
 
   // Create the Player Tank
-  tanks[0] = createTank(CELL_SIZE, CELL_SIZE * 5.5, T_BLUE);
+  // tanks[0] = createTank(CELL_SIZE, CELL_SIZE * 5.5, T_BLUE);
   // Create the Enemy Tank
   // tanks[1] = createTank(SCREEN_WIDTH - (CELL_SIZE * 2), CELL_SIZE * 5.5,
   // T_RED);
 
-  animateSprite(&tanks[0]);
+  // animateSprite(&tanks[0]);
   // animateSprite(&tanks[1]);
 
   while (pmMainLoop()) {
     processInput(tanks[0]);
-    updateSprites(tanks, 1);
+    // updateSprites(tanks, 1);
 
     swiWaitForVBlank();
     oamUpdate(&oamMain);
