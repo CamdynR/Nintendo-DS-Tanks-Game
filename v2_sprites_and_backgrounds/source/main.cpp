@@ -33,7 +33,7 @@ struct Tank {
   u16 *sprite_gfx_mem;
   u8 *frame_gfx;
 
-  int state;
+  int color;
   int anim_frame = 0;
 
   int height;
@@ -43,7 +43,7 @@ struct Tank {
 //---------------------------------------------------------------------
 // The state of the sprite (which way it is walking)
 //---------------------------------------------------------------------
-enum SpriteState { W_UP = 0, W_RIGHT = 1, W_DOWN = 2, W_LEFT = 3 };
+enum SpriteColor { T_BLUE = 0, T_RED = 1 };
 
 //---------------------------------------------------------------------------------
 //
@@ -157,6 +157,7 @@ void handleInput(Tank &tank, int &keys) {
 
   if (hasMoved) {
     // Animate the tank sprite
+    tank.anim_frame = (tank.anim_frame + 1) % 3;
     animateSprite(&tank);
   }
 };
@@ -206,14 +207,14 @@ void initSpriteGfx(Tank *tank, u8 *gfx) {
  * @brief Creates a tank at the specified position.
  * @param x The starting x-coordinate.
  * @param y The starting y-coordinate.
- * @param color The RGB15 color of the tank
- * @param paletteIndex The palette index to use for the tank
+ * @param color The color of the tank (0 = blue, 1 = red)
  * @return A new Tank instance.
  */
-Tank createTank(int x, int y) {
+Tank createTank(int x, int y, int color) {
   Tank tank = {{x, y}};
   tank.height = TANK_SIZE;
   tank.width = TANK_SIZE;
+  tank.color = color;
   initSpriteGfx(&tank, (u8 *)all_tanksTiles);
   dmaCopy(all_tanksPal, SPRITE_PALETTE, 512);
   return tank;
@@ -237,8 +238,12 @@ void processInput(Tank &tank) {
  */
  void animateSprite(Tank *tank) {
   // Update the tank's animation frame
-  tank->anim_frame = (tank->anim_frame + 1) % 3;
-  u8*offset = tank->frame_gfx + tank->anim_frame * TANK_SIZE * TANK_SIZE;
+  // tank->anim_frame = (tank->anim_frame + 1) % 3;
+  // u8*offset = tank->frame_gfx + tank->anim_frame * TANK_SIZE * TANK_SIZE;
+
+  int frame = tank->anim_frame + (tank->color * 3);
+	u8* offset = tank->frame_gfx + frame * (TANK_SIZE * TANK_SIZE);
+
   dmaCopy(offset, tank->sprite_gfx_mem, TANK_SIZE * TANK_SIZE);
 }
 
@@ -268,9 +273,9 @@ int main(void) {
   initGraphics();
 
   // Create the Player Tank
-  tanks[0] = createTank(CELL_SIZE, CELL_SIZE * 5.5);
+  tanks[0] = createTank(CELL_SIZE, CELL_SIZE * 5.5, T_BLUE);
   // Create the Enemy Tank
-  tanks[1] = createTank(SCREEN_WIDTH - (CELL_SIZE * 2), CELL_SIZE);
+  tanks[1] = createTank(SCREEN_WIDTH - (CELL_SIZE * 2), CELL_SIZE, T_RED);
 
   animateSprite(&tanks[0]);
   animateSprite(&tanks[1]);
