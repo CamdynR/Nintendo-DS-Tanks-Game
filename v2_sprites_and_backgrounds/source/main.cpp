@@ -13,7 +13,9 @@ Camdyn Rasque
 #include <nds.h>
 #include <unistd.h>
 
+#include "blue-tank-turret.h"
 #include "blue-tank.h"
+#include "calico/types.h"
 #include "nds/arm9/video.h"
 #include "red-tank.h"
 #include "wood_bg.h"
@@ -32,14 +34,20 @@ struct Position {
 struct Tank {
   Position pos;
 
-  u16 *sprite_gfx_mem;
-  u8 *frame_gfx;
+  u16 *body_gfx_mem;
+  u8 *body_frame_gfx;
+
+  u16 *turret_gfx_mem;
+  u8 *turret_frame_gfx;
 
   int color;
   int anim_frame = 0;
 
   int height;
   int width;
+
+  // 0 = N, 1 = NE, 2 = E, 3 = SE, 4 = S, 5 = SW, 6 = W, 7 = NW
+  int direction = 0;
 };
 
 //---------------------------------------------------------------------
@@ -136,11 +144,13 @@ void handleInput(Tank &tank, int &keys) {
   // Update user's up and down position
   if (keys & KEY_UP) {
     newPos.y -= 1;
+    tank.direction = 0;
     hasMoved = true;
   }
   if (keys & KEY_DOWN) {
-    hasMoved = true;
     newPos.y += 1;
+    tank.direction = 4; // Down
+    hasMoved = true;
   }
   if (validateInput(newPos, tank)) tank.pos.y = newPos.y;
 
@@ -149,17 +159,31 @@ void handleInput(Tank &tank, int &keys) {
   // Update user's left and right position
   if (keys & KEY_LEFT) {
     newPos.x -= 1;
+    if (keys & KEY_UP) {
+      tank.direction = 7; // Up-Left
+    } else if (keys & KEY_DOWN) {
+      tank.direction = 5; // Down-Left
+    } else {
+      tank.direction = 6; // Left
+    }
     hasMoved = true;
   }
   if (keys & KEY_RIGHT) {
     newPos.x += 1;
+    if (keys & KEY_UP) {
+      tank.direction = 1; // Up-Right
+    } else if (keys & KEY_DOWN) {
+      tank.direction = 3; // Down-Right
+    } else {
+      tank.direction = 2; // Right
+    }
     hasMoved = true;
   }
   if (validateInput(newPos, tank)) tank.pos.x = newPos.x;
 
   if (hasMoved) {
     // Animate the tank sprite
-    // tank.anim_frame = (tank.anim_frame + 1) % 3;
+    tank.anim_frame = (tank.anim_frame + 1) % 3;
     animateSprite(&tank);
   }
 };
@@ -198,12 +222,24 @@ void initGraphics() {
  * @brief Allocates and initializes sprite graphics.
  * @return Pointer to allocated graphics memory.
  */
-void initSpriteGfx(Tank *tank, u8 *gfx) {
+void initTankBodyGfx(Tank *tank, u8 *gfx) {
   // Allocate 16x16 sprite graphics memory
-  tank->sprite_gfx_mem =
-      oamAllocateGfx(&oamMain, SpriteSize_16x16, SpriteColorFormat_256Color);
-  // Set the frame_gfx pointer to the start of the sprite sheet
-  tank->frame_gfx = gfx;
+  tank->body_gfx_mem =
+      oamAllocateGfx(&oamMain, SpriteSize_32x32, SpriteColorFormat_256Color);
+  // Set the body_frame_gfx pointer to the start of the sprite sheet
+  tank->body_frame_gfx = gfx;
+}
+
+/**
+ * @brief Allocates and initializes sprite graphics.
+ * @return Pointer to allocated graphics memory.
+ */
+void initTankTurretGfx(Tank *tank, u8 *gfx) {
+  // Allocate 16x16 sprite graphics memory
+  tank->turret_gfx_mem =
+      oamAllocateGfx(&oamMain, SpriteSize_32x32, SpriteColorFormat_256Color);
+  // Set the turret_frame_gfx pointer to the start of the sprite sheet
+  tank->turret_frame_gfx = gfx;
 }
 
 /**
@@ -218,11 +254,13 @@ Tank createTank(int x, int y, int color) {
   tank.height = TANK_SIZE;
   tank.width = TANK_SIZE;
   tank.color = color;
+
   if (color == T_BLUE) {
-    initSpriteGfx(&tank, (u8 *)blue_tankTiles);
+    initTankBodyGfx(&tank, (u8 *)blue_tankTiles);
+    initTankTurretGfx(&tank, (u8 *)blue_tank_turretTiles);
     dmaCopy(blue_tankPal, SPRITE_PALETTE, 512);
   } else if (color == T_RED) {
-    initSpriteGfx(&tank, (u8 *)red_tankTiles);
+    initTankBodyGfx(&tank, (u8 *)red_tankTiles);
     dmaCopy(red_tankPal, SPRITE_PALETTE, 512);
   }
   return tank;
@@ -247,9 +285,9 @@ void processInput(Tank &tank) {
 void animateSprite(Tank *tank) {
   int frame = tank->anim_frame;
   // Calculate the offset correctly for a 48x16 sprite with 3 frames
-  u8 *offset = tank->frame_gfx + frame * TANK_SIZE;
+  u8 *offset = tank->body_frame_gfx + frame * 32 * 32;
 
-  dmaCopy(offset, tank->sprite_gfx_mem, TANK_SIZE * TANK_SIZE);
+  dmaCopy(offset, tank->body_gfx_mem, 32 * 32);
 }
 
 /**
@@ -259,11 +297,49 @@ void animateSprite(Tank *tank) {
  */
 void updateSprites(Tank tanks[], int numTanks) {
   for (int i = 0; i < numTanks; i++) {
-    // Update the sprite's position
+    int angle = 0;
+    switch (tanks[i].direction) {
+    case 0:
+      angle = 0;
+      break; // Up
+    case 1:
+      angle = 315;
+      break; // Up-Right
+    case 2:
+      angle = 270;
+      break; // Right
+    case 3:
+      angle = 225;
+      break; // Down-Right
+    case 4:
+      angle = 180;
+      break; // Down
+    case 5:
+      angle = 135;
+      break; // Down-Left
+    case 6:
+      angle = 90;
+      break; // Left
+    case 7:
+      angle = 45;
+      break; // Up-Left
+    }
+
+    // Apply rotation
+    oamRotateScale(&oamMain, i, degreesToAngle(angle), 256, 256);
+
+    // Update the tank sprite's position
     oamSet(&oamMain, i, tanks[i].pos.x, tanks[i].pos.y, 0,
            i + 1, // Priority & palette index
-           SpriteSize_16x16, SpriteColorFormat_256Color,
-           tanks[i].sprite_gfx_mem, // Graphics pointer
+           SpriteSize_32x32, SpriteColorFormat_256Color,
+           tanks[i].body_gfx_mem, // Graphics pointer
+           i, false, false, false, false, false);
+
+    // Update the turret sprite's position
+    oamSet(&oamMain, i + MAX_TANKS, tanks[i].pos.x, tanks[i].pos.y, 0,
+           i + 1, // Priority & palette index
+           SpriteSize_32x32, SpriteColorFormat_256Color,
+           tanks[i].turret_gfx_mem, // Graphics pointer
            -1, false, false, false, false, false);
   }
 }
