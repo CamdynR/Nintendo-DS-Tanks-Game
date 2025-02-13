@@ -14,6 +14,22 @@ Camdyn Rasque
 
 //---------------------------------------------------------------------------------
 //
+// STRUCT FUNCTIONS
+//
+//---------------------------------------------------------------------------------
+
+void Tank::animate() {
+  int frame = this->anim_frame + this->color;
+  // Calculate the offset correctly for a 32x32 sprite with 3 frames
+  u8 *offset = this->body_frame_gfx + frame * this->tile_size * this->tile_size;
+
+  dmaCopy(offset, this->body_gfx_mem, this->tile_size * this->tile_size);
+  dmaCopy(this->turret_frame_gfx, this->turret_gfx_mem,
+          this->tile_size * this->tile_size);
+}
+
+//---------------------------------------------------------------------------------
+//
 // INITIALIZATION FUNCTIONS
 //
 //---------------------------------------------------------------------------------
@@ -23,7 +39,8 @@ void initTankBodyGfx(Tank *tank, u8 *gfx, int color) {
   tank->body_gfx_mem =
       oamAllocateGfx(&oamMain, SpriteSize_32x32, SpriteColorFormat_256Color);
   // Set the body_frame_gfx pointer to the start of the sprite sheet
-  tank->body_frame_gfx = gfx + ((color * 3) * tank->tile_size * tank->tile_size);
+  tank->body_frame_gfx =
+      gfx + ((color * 3) * tank->tile_size * tank->tile_size);
 }
 
 void initTankTurretGfx(Tank *tank, u8 *gfx, int color) {

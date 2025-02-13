@@ -15,9 +15,9 @@ Camdyn Rasque
 #include <nds.h>
 #include <unistd.h>
 
+#include "Cursor.h"
 #include "Position.h"
 #include "Tank.h"
-#include "Cursor.h"
 #include "calico/types.h"
 #include "nds/arm9/background.h"
 #include "nds/arm9/video.h"
@@ -37,8 +37,6 @@ const int ANIMATION_SPEED = 2;
 int frameCounter = 0;
 Cursor cursor;
 Tank tanks[MAX_TANKS];
-
-void animateSprite(Tank *tank);
 
 //---------------------------------------------------------------------------------
 //
@@ -199,7 +197,7 @@ void handleDirectionInput(Tank &tank, int &keys) {
     if (frameCounter >= ANIMATION_SPEED) {
       // Animate the tank sprite
       tank.anim_frame = (tank.anim_frame - 1 + 3) % 3;
-      animateSprite(&tank);
+      tank.animate();
       // Reset the frame counter
       frameCounter = 0;
     }
@@ -285,27 +283,13 @@ void initGraphics() {
 //---------------------------------------------------------------------------------
 
 /**
- * @brief Animates the tank sprite based on its state.
- * @param tank The tank to animate.
- */
-void animateSprite(Tank *tank) {
-  int frame = tank->anim_frame + tank->color;
-  // Calculate the offset correctly for a 32x32 sprite with 3 frames
-  u8 *offset = tank->body_frame_gfx + frame * tank->tile_size * tank->tile_size;
-
-  dmaCopy(offset, tank->body_gfx_mem, tank->tile_size * tank->tile_size);
-  dmaCopy(tank->turret_frame_gfx, tank->turret_gfx_mem,
-    tank->tile_size * tank->tile_size);
-}
-
-/**
  * @brief Updates sprite attributes for all tanks.
  * @param tanks Array of tanks to update.
  * @param numTanks Number of tanks in the array.
  */
 void updateSprites(Tank tanks[], int numTanks) {
   // Update the cursor sprite's position
-  oamSet(&oamMain, 0, cursor.pos.x, cursor.pos.y - 8, 1, 0, SpriteSize_32x32,
+  oamSet(&oamMain, 0, cursor.pos.x, cursor.pos.y - 8, 0, 0, SpriteSize_32x32,
          SpriteColorFormat_256Color,
          cursor.sprite_gfx_mem, // Graphics pointer
          -1, false, false, false, false, false);
@@ -388,8 +372,10 @@ int main(void) {
   // Create the Enemy Tank
   tanks[1] = createTank(SCREEN_WIDTH - (CELL_SIZE * 2), CELL_SIZE * 5.5, T_RED);
 
-  animateSprite(&tanks[0]);
-  animateSprite(&tanks[1]);
+  // Animate the tanks
+  for (int i = 0; i < MAX_TANKS; i++) {
+    tanks[i].animate();
+  }
 
   while (pmMainLoop()) {
     processSpriteInput(tanks[0]);

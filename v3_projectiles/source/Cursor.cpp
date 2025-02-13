@@ -26,7 +26,7 @@ void initCursor(Cursor &cursor) {
   cursor.sprite_frame_gfx =
       (u8 *)sprite_sheetTiles + ((2 * 4) * cursor.tile_size * cursor.tile_size);
   dmaCopy(cursor.sprite_frame_gfx, cursor.sprite_gfx_mem,
-    cursor.tile_size * cursor.tile_size);
+          cursor.tile_size * cursor.tile_size);
 }
 
 //---------------------------------------------------------------------------------
@@ -44,27 +44,27 @@ void drawDottedLine(int x1, int y1, int x2, int y2) {
   float x = x1;
   float y = y1;
 
-  glBegin2D();
   for (int i = 0; i <= steps; i++) {
-      glBoxFilled(x - 1, y - 1, x + 1, y + 1,
-                  RGB15(7, 23, 31)); // Draw smaller circle
-      x += xIncrement;
-      y += yIncrement;
+    glBoxFilled(x - 1, y - 1, x + 1, y + 1,
+                RGB15(7, 23, 31)); // Draw smaller circle
+    x += xIncrement;
+    y += yIncrement;
   }
-  glEnd2D();
 }
 
-void handleCursorInput(Cursor &cursor, touchPosition &touch, int keys, Tank &userTank) {
+void handleCursorInput(Cursor &cursor, touchPosition &touch, int keys,
+                       Tank &userTank) {
   if (touch.rawx != 0 && touch.rawy != 0) {
     cursor.pos.x = touch.px - 16;
     cursor.pos.y = touch.py - 7;
     // Show the user's touch on screen
     drawDottedLine(userTank.pos.x + 8, userTank.pos.y + 8, cursor.pos.x + 15,
-                    cursor.pos.y + 8);
+                   cursor.pos.y + 8);
   }
 }
 
 void processCursorInput(Cursor &cursor, Tank &userTank) {
+  glBegin2D();
   // Button Input
   scanKeys();
   int keys = keysHeld();
@@ -78,4 +78,5 @@ void processCursorInput(Cursor &cursor, Tank &userTank) {
     cursor.pos.x = -1 * cursor.tile_size;
     cursor.pos.y = -1 * cursor.tile_size;
   }
+  glEnd2D();
 }

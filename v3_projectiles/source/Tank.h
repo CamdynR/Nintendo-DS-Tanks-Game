@@ -1,10 +1,10 @@
 #ifndef TANK_H
 #define TANK_H
 
-#include <nds.h>
+#include "Sprite.h"
 #include "calico/types.h"
 #include "sprite-sheet.h"
-#include "Sprite.h"
+#include <nds.h>
 
 //---------------------------------------------------------------------------------
 //
@@ -20,23 +20,30 @@ const int TANK_SIZE = 16;
 //
 //---------------------------------------------------------------------------------
 
-struct Tank: Sprite {
+struct Tank : Sprite {
+  // Tank body sprite
   u16 *body_gfx_mem;
   u8 *body_frame_gfx;
 
+  // Turret sprite
   u16 *turret_gfx_mem;
   u8 *turret_frame_gfx;
 
-  int color;
-  int anim_frame = 0;
+  int color;          // Color of the tank (0 = blue, 1 = red)
+  int anim_frame = 0; // Animation frame state (0-2)
 
-  int height = TANK_SIZE;
-  int width = TANK_SIZE;
+  int height = TANK_SIZE; // Visual height of the tank in px within the Tile
+  int width = TANK_SIZE;  // Visual height of the tank in px within the Tile
 
   // 0 = N, 1 = NE, 2 = E, 3 = SE, 4 = S, 5 = SW, 6 = W, 7 = NW
   int direction = 0;
 
-  float turret_angle = 0; // Add this field to store the turret's rotation angle
+  float turret_angle = 0; // Turret's rotational angle
+
+  /**
+   * @brief Animates the tank sprite based on its state.
+   */
+  void animate();
 };
 
 //---------------------------------------------------------------------
