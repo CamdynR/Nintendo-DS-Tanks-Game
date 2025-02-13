@@ -236,67 +236,6 @@ void processSpriteInput(Tank &tank) {
   }
 }
 
-/**
- * @brief Draws a dotted line with exactly 8 small circles connecting two
- * points.
- * @param x1 The x-coordinate of the first point.
- * @param y1 The y-coordinate of the first point.
- * @param x2 The x-coordinate of the second point.
- * @param y2 The y-coordinate of the second point.
- */
-void drawDottedLine(int x1, int y1, int x2, int y2) {
-  int dx = x2 - x1;
-  int dy = y2 - y1;
-  int steps = 8; // Always have exactly 8 dots
-  float xIncrement = dx / (float)steps;
-  float yIncrement = dy / (float)steps;
-  float x = x1;
-  float y = y1;
-
-  glBegin2D();
-  for (int i = 0; i <= steps; i++) {
-    glBoxFilled(x - 1, y - 1, x + 1, y + 1,
-                RGB15(7, 23, 31)); // Draw smaller circle
-    x += xIncrement;
-    y += yIncrement;
-  }
-  glEnd2D();
-}
-
-/**
- * @brief Handles touch input to update the cursor position.
- * @param touch The touch position data.
- * @param keys The pressed keys bitmask.
- */
-void handleCursorInput(touchPosition &touch, int keys) {
-  if (touch.rawx != 0 && touch.rawy != 0) {
-    cursor.pos.x = touch.px - 16;
-    cursor.pos.y = touch.py - 7;
-    // Show the user's touch on screen
-    drawDottedLine(tanks[0].pos.x + 8, tanks[0].pos.y + 8, cursor.pos.x + 15,
-                   cursor.pos.y + 8);
-  }
-}
-
-/**
- * @brief Processes user input to update the cursor position.
- */
-void processCursorInput() {
-  // Button Input
-  scanKeys();
-  int keys = keysHeld();
-  // Touch Input
-  touchPosition touch;
-  touchRead(&touch);
-  // Handle touch input
-  if (keys & KEY_TOUCH) {
-    handleCursorInput(touch, keys);
-  } else {
-    cursor.pos.x = -1 * cursor.tile_size;
-    cursor.pos.y = -1 * cursor.tile_size;
-  }
-}
-
 //---------------------------------------------------------------------------------
 //
 // INITIALIZATION FUNCTIONS
@@ -455,7 +394,7 @@ int main(void) {
   while (pmMainLoop()) {
     processSpriteInput(tanks[0]);
     updateSprites(tanks, 2);
-    processCursorInput();
+    processCursorInput(cursor, tanks[0]);
 
     frameCounter++;
 
