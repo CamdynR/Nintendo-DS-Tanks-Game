@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------
 
-v2 of my Tank Game
+v3 of my Tank Game
 Camdyn Rasque
 
 ---------------------------------------------------------------------------------*/
@@ -15,6 +15,9 @@ Camdyn Rasque
 #include <nds.h>
 #include <unistd.h>
 
+#include "Position.h"
+#include "Tank.h"
+#include "Cursor.h"
 #include "calico/types.h"
 #include "nds/arm9/background.h"
 #include "nds/arm9/video.h"
@@ -28,57 +31,8 @@ Camdyn Rasque
 //
 //---------------------------------------------------------------------------------
 
-struct Position {
-  int x;
-  int y;
-};
-
-struct Cursor {
-  Position pos = {100, 100};
-
-  u16 *sprite_gfx_mem;
-  u8 *sprite_frame_gfx;
-
-  int height = 14;
-  int width = 14;
-};
-
-struct Tank {
-  Position pos;
-
-  u16 *body_gfx_mem;
-  u8 *body_frame_gfx;
-
-  u16 *turret_gfx_mem;
-  u8 *turret_frame_gfx;
-
-  int color;
-  int anim_frame = 0;
-
-  int height = 16;
-  int width = 16;
-
-  // 0 = N, 1 = NE, 2 = E, 3 = SE, 4 = S, 5 = SW, 6 = W, 7 = NW
-  int direction = 0;
-
-  float turret_angle = 0; // Add this field to store the turret's rotation angle
-};
-
-//---------------------------------------------------------------------
-// The state of the sprite (which way it is walking)
-//---------------------------------------------------------------------
-enum SpriteColor { T_BLUE = 0, T_RED = 1 };
-
-//---------------------------------------------------------------------------------
-//
-// CONSTANTS & GLOBALS
-//
-//---------------------------------------------------------------------------------
-
 const int MAX_TANKS = 2;
-const int TANK_SIZE = 16;
 const int CELL_SIZE = TANK_SIZE;
-const int SPRITE_SIZE = 32;
 const int ANIMATION_SPEED = 2;
 int frameCounter = 0;
 Cursor cursor;
@@ -338,8 +292,8 @@ void processCursorInput() {
   if (keys & KEY_TOUCH) {
     handleCursorInput(touch, keys);
   } else {
-    cursor.pos.x = -1 * SPRITE_SIZE;
-    cursor.pos.y = -1 * SPRITE_SIZE;
+    cursor.pos.x = -1 * cursor.tile_size;
+    cursor.pos.y = -1 * cursor.tile_size;
   }
 }
 
@@ -383,71 +337,6 @@ void initGraphics() {
   // Prevent GL2D from drawing a black frame
   glClearColor(31, 31, 31, 0);
   glClearPolyID(63);
-  // glClearDepth(0);
-}
-
-/**
- * @brief Initializes the cursor sprite.
- */
-void initCursor() {
-  // Allocate 32x32 sprite graphics memory
-  cursor.sprite_gfx_mem =
-      oamAllocateGfx(&oamMain, SpriteSize_32x32, SpriteColorFormat_256Color);
-  // Set the body_frame_gfx pointer to the start of the sprite sheet
-  cursor.sprite_frame_gfx =
-      (u8 *)sprite_sheetTiles + ((2 * 4) * SPRITE_SIZE * SPRITE_SIZE);
-  dmaCopy(cursor.sprite_frame_gfx, cursor.sprite_gfx_mem,
-          SPRITE_SIZE * SPRITE_SIZE);
-}
-
-/**
- * @brief Allocates and initializes sprite graphics for the tank body.
- * @param tank The tank object.
- * @param gfx The graphics data.
- * @param color The color of the tank.
- */
-void initTankBodyGfx(Tank *tank, u8 *gfx, int color) {
-  // Allocate 32x32 sprite graphics memory
-  tank->body_gfx_mem =
-      oamAllocateGfx(&oamMain, SpriteSize_32x32, SpriteColorFormat_256Color);
-  // Set the body_frame_gfx pointer to the start of the sprite sheet
-  tank->body_frame_gfx = gfx + ((color * 3) * SPRITE_SIZE * SPRITE_SIZE);
-}
-
-/**
- * @brief Allocates and initializes sprite graphics for the tank turret.
- * @param tank The tank object.
- * @param gfx The graphics data.
- * @param color The color of the tank.
- */
-void initTankTurretGfx(Tank *tank, u8 *gfx, int color) {
-  // Allocate 32x32 sprite graphics memory
-  tank->turret_gfx_mem =
-      oamAllocateGfx(&oamMain, SpriteSize_32x32, SpriteColorFormat_256Color);
-  // Set the turret_frame_gfx pointer to the correct position in the sprite
-  // sheet Assuming each sprite is 32x32 pixels and gfx is a linear array Blue
-  // turret is in row 2, column 1 Red turret is in row 2, column 2
-  int row = 3;        // Row 2 (0-indexed)
-  int column = color; // Column 1 for blue (0), Column 2 for red (1)
-  tank->turret_frame_gfx = gfx + (row * SPRITE_SIZE * SPRITE_SIZE * 2) +
-                           (column * SPRITE_SIZE * SPRITE_SIZE);
-}
-
-/**
- * @brief Creates a tank at the specified position.
- * @param x The starting x-coordinate.
- * @param y The starting y-coordinate.
- * @param color The color of the tank (0 = blue, 1 = red)
- * @return A new Tank instance.
- */
-Tank createTank(int x, int y, int color) {
-  Tank tank = {{x, y}};
-  tank.color = color;
-
-  initTankBodyGfx(&tank, (u8 *)sprite_sheetTiles, color);
-  initTankTurretGfx(&tank, (u8 *)sprite_sheetTiles, color);
-
-  return tank;
 }
 
 //---------------------------------------------------------------------------------
@@ -463,11 +352,11 @@ Tank createTank(int x, int y, int color) {
 void animateSprite(Tank *tank) {
   int frame = tank->anim_frame + tank->color;
   // Calculate the offset correctly for a 32x32 sprite with 3 frames
-  u8 *offset = tank->body_frame_gfx + frame * SPRITE_SIZE * SPRITE_SIZE;
+  u8 *offset = tank->body_frame_gfx + frame * tank->tile_size * tank->tile_size;
 
-  dmaCopy(offset, tank->body_gfx_mem, SPRITE_SIZE * SPRITE_SIZE);
+  dmaCopy(offset, tank->body_gfx_mem, tank->tile_size * tank->tile_size);
   dmaCopy(tank->turret_frame_gfx, tank->turret_gfx_mem,
-          SPRITE_SIZE * SPRITE_SIZE);
+    tank->tile_size * tank->tile_size);
 }
 
 /**
@@ -554,7 +443,7 @@ int main(void) {
   initGraphics();
 
   // Create player cursor
-  initCursor();
+  initCursor(cursor);
   // Create the Player Tank
   tanks[0] = createTank(CELL_SIZE, CELL_SIZE * 5.5, T_BLUE);
   // Create the Enemy Tank
