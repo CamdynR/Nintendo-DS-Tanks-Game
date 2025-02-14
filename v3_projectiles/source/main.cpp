@@ -34,6 +34,7 @@ const int MAX_TANKS = 2;
 const int CELL_SIZE = TANK_SIZE;
 const int ANIMATION_SPEED = 2;
 int frameCounter = 0;
+int spriteIdCount = 1;
 Cursor cursor;
 Tank tanks[MAX_TANKS];
 
@@ -224,8 +225,7 @@ void handleTurretInput(Tank &tank, touchPosition &touch) {
   // Calculate the angle between the tank and the touch position
   float angle =
       calculateAngle(tankPos.x, tankPos.y, cursor.pos.x, cursor.pos.y);
-  tank.turret.rotation_angle =
-      270 - angle; // Update turret angle based on touch input
+  tank.turret.rotation_angle = 270 - angle;
 }
 
 /**
@@ -268,8 +268,7 @@ void initBackground() {
  * @brief Initializes the sprite palette.
  */
 void initSprites() {
-  vramSetBankB(
-      VRAM_B_MAIN_SPRITE); // Sprites can be used in VRAM B in this mode
+  vramSetBankB(VRAM_B_MAIN_SPRITE);
   oamInit(&oamMain, SpriteMapping_1D_32, false);
   // Load sprite palette AFTER background palette
   dmaCopy(sprite_sheetPal, SPRITE_PALETTE, sprite_sheetPalLen);
@@ -301,71 +300,12 @@ void initGraphics() {
  * @param numTanks Number of tanks in the array.
  */
 void updateSprites(Tank tanks[], int numTanks) {
-  // Update the cursor sprite's position
-  oamSet(&oamMain, 0, cursor.pos.x, cursor.pos.y - 8, 0, 0, SpriteSize_32x32,
-         SpriteColorFormat_256Color,
-         cursor.sprite_gfx_mem, // Graphics pointer
-         -1, false, false, false, false, false);
-
+  // Update the cursor first and foremost
+  cursor.updateOAM();
   // Update all the tank sprite positions
   for (int i = 0; i < numTanks; i++) {
-    int id = i + 1;
-    int rotAdjX = 0;
-    int rotAdjY = 0;
-
-    int angle = 0;
-    switch (tanks[i].direction) {
-    case 0:
-      angle = 0;
-      break; // Up
-    case 1:
-      angle = 315;
-      break; // Up-Right
-    case 2:
-      angle = 270;
-      break; // Right
-    case 3:
-      angle = 225;
-      rotAdjX -= 1;
-      break; // Down-Right
-    case 4:
-      angle = 180;
-      rotAdjX -= 1;
-      break; // Down
-    case 5:
-      angle = 135;
-      rotAdjX -= 1;
-      rotAdjY -= 1;
-      break; // Down-Left
-    case 6:
-      angle = 90;
-      rotAdjY -= 1;
-      break; // Left
-    case 7:
-      angle = 45;
-      rotAdjY -= 1;
-      break; // Up-Left
-    }
-
-    // Apply rotation
-    oamRotateScale(&oamMain, id, degreesToAngle(angle), 256, 256);
-
-    // Update the tank sprite's position
-    Position tankPos = tanks[i].getPosition();
-    oamSet(&oamMain, id, tankPos.x - 8 + rotAdjX, tankPos.y - 8 + rotAdjY, 2,
-           id, SpriteSize_32x32, SpriteColorFormat_256Color,
-           tanks[i].body.gfx_mem, // Graphics pointer
-           id, false, false, false, false, false);
-
-    // Apply rotation to the turret
-    oamRotateScale(&oamMain, id + MAX_TANKS,
-                   degreesToAngle(tanks[i].turret.rotation_angle), 256, 256);
-
-    // Update the turret sprite's position
-    oamSet(&oamMain, id + MAX_TANKS, tankPos.x - 8, tankPos.y - 8, 1, id + 1,
-           SpriteSize_32x32, SpriteColorFormat_256Color,
-           tanks[i].turret.gfx_mem, // Graphics pointer
-           id + MAX_TANKS, false, false, false, false, false);
+    // tanks[i].body.rotation_angle = angle;
+    tanks[i].updateOAM();
   }
 }
 
@@ -381,9 +321,10 @@ int main(void) {
   // Create player cursor
   initCursor(cursor);
   // Create the Player Tank
-  tanks[0] = createTank(CELL_SIZE, CELL_SIZE * 5.5, T_BLUE);
+  tanks[0] = createTank(CELL_SIZE, CELL_SIZE * 5.5, T_BLUE, spriteIdCount);
   // Create the Enemy Tank
-  tanks[1] = createTank(SCREEN_WIDTH - (CELL_SIZE * 2), CELL_SIZE * 5.5, T_RED);
+  tanks[1] = createTank(SCREEN_WIDTH - (CELL_SIZE * 2), CELL_SIZE * 5.5, T_RED,
+                        spriteIdCount);
 
   // Animate the tanks
   for (int i = 0; i < MAX_TANKS; i++) {
@@ -392,7 +333,7 @@ int main(void) {
 
   while (pmMainLoop()) {
     processSpriteInput(tanks[0]);
-    updateSprites(tanks, 2);
+    updateSprites(tanks, MAX_TANKS);
     processCursorInput(cursor, tanks[0]);
 
     frameCounter++;

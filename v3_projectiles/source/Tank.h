@@ -61,9 +61,19 @@ struct Tank {
   Position &getPosition();
 
   /*
+   * @brief Sets the offset of both of the axes for the tank
+   */
+  void setOffset(int x, int y);
+
+  /*
    * @brief Animates the tank sprite based on its state.
    */
   void animate();
+
+  /*
+   * @brief Updates the OAM for both the tank body and tank turret
+   */
+  void updateOAM();
 };
 
 //---------------------------------------------------------------------
@@ -98,8 +108,9 @@ void initTankTurretGfx(Tank *tank, u8 *gfx, int color);
  * @param x The starting x-coordinate.
  * @param y The starting y-coordinate.
  * @param color The color of the tank (0 = blue, 1 = red)
+ * @param spriteIdCount The id count of all the sprites (for oam use)
  * @return A new Tank instance.
  */
-Tank createTank(int x, int y, int color);
+Tank createTank(int x, int y, TankColor color, int &spriteIdCount);
 
 #endif // TANK_H

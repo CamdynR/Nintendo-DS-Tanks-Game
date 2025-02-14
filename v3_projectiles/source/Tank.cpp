@@ -42,6 +42,11 @@ int Tank::getPosition(char axis) {
   return -1;
 }
 
+void Tank::setOffset(int x, int y) {
+  body.tile_offset = {x, y};
+  turret.tile_offset = {x, y};
+}
+
 Position &Tank::getPosition() { return body.pos; }
 
 void Tank::animate() {
@@ -52,6 +57,38 @@ void Tank::animate() {
   dmaCopy(offset, body.gfx_mem, body.tile_size * body.tile_size);
   dmaCopy(turret.gfx_frame, turret.gfx_mem,
           turret.tile_size * turret.tile_size);
+}
+
+void Tank::updateOAM() {
+  // Update rotation angle of the body
+  body.rotation_angle = (8 - direction) * 45 % 360;
+
+  // Adjust for rotational miscalculations
+  switch (direction) {
+  case 3:
+    body.tile_offset.x += 1;
+    break; // Down-Right
+  case 4:
+    body.tile_offset.x += 1;
+    break; // Down
+  case 5:
+    body.tile_offset.x += 1;
+    body.tile_offset.y += 1;
+    break; // Down-Left
+  case 6:
+    body.tile_offset.y += 1;
+    break; // Left
+  case 7:
+    body.tile_offset.y += 1;
+    break; // Up-Left
+  }
+
+  // Update the OAM
+  body.updateOAM();
+  turret.updateOAM();
+
+  // Reset rotational adjustment
+  setOffset(8, 8);
 }
 
 //---------------------------------------------------------------------------------
@@ -83,12 +120,29 @@ void initTankTurretGfx(Tank &tank, u8 *gfx) {
       (column * tank.turret.tile_size * tank.turret.tile_size);
 }
 
-Tank createTank(int x, int y, int color) {
-  Tank tank = {{x, y}};
+Tank createTank(int x, int y, TankColor color, int &spriteIdCount) {
+  // Create the tank
+  Tank tank;
+  // Update the position of both sprites
+  tank.setPosition(x, y);
+  tank.setOffset(8, 8);
+  // Set the tank's color and offsets for body and turret
   tank.color = color;
+
+  // Set the oam attributes for the tank body
+  tank.body.id = spriteIdCount++;
+  tank.body.palette_alpha = tank.body.id;
+  tank.body.priority = 2;
+  tank.body.affine_index = tank.body.id;
+
+  // Update Sprite ID Count
+  // Set the oam attributes for the tank turret
+  tank.turret.id = spriteIdCount++;
+  tank.turret.palette_alpha = tank.turret.id;
+  tank.turret.priority = 1;
+  tank.turret.affine_index = tank.turret.id;
 
   initTankBodyGfx(tank, (u8 *)sprite_sheetTiles);
   initTankTurretGfx(tank, (u8 *)sprite_sheetTiles);
-
   return tank;
 }

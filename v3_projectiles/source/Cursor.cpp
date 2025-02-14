@@ -20,13 +20,17 @@ Camdyn Rasque
 
 void initCursor(Cursor &cursor) {
   // Allocate 32x32 sprite graphics memory
-  cursor.sprite_gfx_mem =
-      oamAllocateGfx(&oamMain, SpriteSize_32x32, SpriteColorFormat_256Color);
+  cursor.gfx_mem =
+      oamAllocateGfx(&oamMain, cursor.sprite_size, cursor.color_format);
   // Set the body_frame_gfx pointer to the start of the sprite sheet
-  cursor.sprite_frame_gfx =
+  cursor.gfx_frame =
       (u8 *)sprite_sheetTiles + ((2 * 4) * cursor.tile_size * cursor.tile_size);
-  dmaCopy(cursor.sprite_frame_gfx, cursor.sprite_gfx_mem,
+  dmaCopy(cursor.gfx_frame, cursor.gfx_mem,
           cursor.tile_size * cursor.tile_size);
+
+  // Hide until shown on screen
+  cursor.hide = true;
+  cursor.tile_offset = {0, 8};
 }
 
 //---------------------------------------------------------------------------------
@@ -74,10 +78,10 @@ void processCursorInput(Cursor &cursor, Tank &userTank) {
   touchRead(&touch);
   // Handle touch input
   if (keys & KEY_TOUCH) {
+    cursor.hide = false;
     handleCursorInput(cursor, touch, keys, userTank);
   } else {
-    cursor.pos.x = -1 * cursor.tile_size;
-    cursor.pos.y = -1 * cursor.tile_size;
+    cursor.hide = true;
   }
   glEnd2D();
 }
