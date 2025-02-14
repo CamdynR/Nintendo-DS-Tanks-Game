@@ -229,7 +229,7 @@ void handleDirectionInput(Tank &tank, int &keys) {
         } else {
           newPosX.x += moveAmount;
         }
-        
+
         if (validateInput(newPosX, tank)) {
           tank.setPosition('x', newPosX.x);
           hasMoved = true;
