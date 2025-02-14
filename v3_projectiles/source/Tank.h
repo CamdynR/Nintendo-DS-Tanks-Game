@@ -102,6 +102,11 @@ struct Tank {
   void interpolateBodyRotation();
 
   /*
+   * Moves the tank in the specified direction. 
+   */
+  void move(TankDirection direction, int frameCounter);
+
+  /*
    * @brief Updates the OAM for both the tank body and tank turret
    */
   void updateOAM();

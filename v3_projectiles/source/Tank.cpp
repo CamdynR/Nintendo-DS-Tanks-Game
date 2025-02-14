@@ -12,6 +12,7 @@ Camdyn Rasque
 
 #include <math.h>
 #include "Tank.h"
+#include "input.h"
 
 //---------------------------------------------------------------------------------
 //
@@ -39,8 +40,12 @@ Tank::Tank(int x, int y, TankColor color, int &spriteIdCount) {
   this->turret.priority = 1;
   this->turret.affine_index = this->turret.id;
 
+  // Initialize the tank body and turret graphics
   initTankBodyGfx(this, (u8 *)sprite_sheetTiles);
   initTankTurretGfx(this, (u8 *)sprite_sheetTiles);
+
+  // Set the initial animation frames
+  this->updateAnimationFrames();
 }
 
 void Tank::setPosition(char axis, int value) {
@@ -111,6 +116,76 @@ void Tank::interpolateBodyRotation() {
   
   // Keep the angle in [0, 360) range
   body.rotation_angle = fmod(fmod(body.rotation_angle, 360.0f) + 360.0f, 360.0f);
+}
+
+void Tank::move(TankDirection direction, int frameCounter) {
+  bool hasMoved = false;
+  int baseSpeed = 1;
+
+  // Accumulate fractional movement
+  static float accumulatedX = 0.0f;
+  static float accumulatedY = 0.0f;
+
+  bool isDiagonal = (direction == T_NE) || (direction == T_SE) || 
+  (direction == T_SW) || (direction == T_NW);
+
+  // Handle Y movement
+  if (this->direction == this->body.rotation_angle) {
+    Position newPosY = {tank.getPosition('x'), tank.getPosition('y')};
+    if (keys & KEY_UP || keys & KEY_DOWN) {
+      float yMove = baseSpeed * (isDiagonal ? 0.707f : 1.0f);
+      float testY = accumulatedY + yMove;
+      int moveAmount = (int)testY;
+      
+      if (moveAmount != 0) {
+        if (keys & KEY_UP) {
+          newPosY.y -= moveAmount;
+        } else {
+          newPosY.y += moveAmount;
+        }
+        
+        if (validateInput(newPosY, tank)) {
+          tank.setPosition('y', newPosY.y);
+          hasMoved = true;
+          accumulatedY = testY - moveAmount;  // Only update accumulator if move was valid
+        }
+      } else {
+        accumulatedY = testY;  // Accumulate small movements
+      }
+    }
+  }
+
+  // Handle X movement
+  if (tank.direction == tank.body.rotation_angle) {
+    Position newPosX = {tank.getPosition('x'), tank.getPosition('y')};
+    if (keys & KEY_LEFT || keys & KEY_RIGHT) {
+      float xMove = baseSpeed * (isDiagonal ? 0.707f : 1.0f);
+      float testX = accumulatedX + xMove;
+      int moveAmount = (int)testX;
+      
+      if (moveAmount != 0) {
+        if (keys & KEY_LEFT) {
+          newPosX.x -= moveAmount;
+        } else {
+          newPosX.x += moveAmount;
+        }
+
+        if (validateInput(newPosX, tank)) {
+          tank.setPosition('x', newPosX.x);
+          hasMoved = true;
+          accumulatedX = testX - moveAmount;  // Only update accumulator if move was valid
+        }
+      } else {
+        accumulatedX = testX;  // Accumulate small movements
+      }
+    }
+  }
+
+  if (hasMoved && frameCounter >= ANIMATION_SPEED) {
+    tank.body.anim_frame = (tank.body.anim_frame - 1 + 3) % 3;
+    tank.updateAnimationFrames();
+    frameCounter = 0;
+  }
 }
 
 void Tank::updateOAM() {
