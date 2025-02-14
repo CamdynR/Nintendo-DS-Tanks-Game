@@ -90,9 +90,16 @@ struct Tank {
   void setOffset(int x, int y);
 
   /*
-   * @brief Animates the tank sprite based on its state.
+   * @brief Updates the selected animation frame of the tank
+   *        sprites based on its state.
    */
-  void animate();
+  void updateAnimationFrames();
+
+  /*
+   * @brief Uses LERP to smoothly rotate the tank body in between
+   *        directions
+   */
+  void interpolateBodyRotation();
 
   /*
    * @brief Updates the OAM for both the tank body and tank turret

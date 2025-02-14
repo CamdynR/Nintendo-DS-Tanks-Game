@@ -155,65 +155,96 @@ bool validateInput(Position &pos, Tank &tank) {
  * @param keys The pressed keys bitmask.
  */
 void handleDirectionInput(Tank &tank, int &keys) {
-  // Copy current position
-  Position newPos = {tank.getPosition('x'), tank.getPosition('y')};
   bool hasMoved = false;
+  int baseSpeed = 1;
 
-  // Update user's up and down position
-  if (keys & KEY_UP) {
-    newPos.y -= 1;
-    tank.direction = T_N; // North
-    hasMoved = true;
-  }
-  if (keys & KEY_DOWN) {
-    newPos.y += 1;
-    tank.direction = T_S; // South
-    hasMoved = true;
-  }
-  if (validateInput(newPos, tank)) {
-    tank.setPosition('y', newPos.y);
-  }
+  // Check if moving diagonally
+  bool isDiagonal = ((keys & KEY_LEFT) || (keys & KEY_RIGHT)) && 
+  ((keys & KEY_UP) || (keys & KEY_DOWN));
 
-  // Reset new position in case validation failed
-  newPos = {tank.getPosition('x'), tank.getPosition('y')};
-
-  // Update user's left and right position
+  // Set initial direction based on combined key presses
   if (keys & KEY_LEFT) {
-    newPos.x -= 1;
     if (keys & KEY_UP) {
-      tank.direction = T_NW; // Up-Left
+      tank.direction = T_NW;
     } else if (keys & KEY_DOWN) {
-      tank.direction = T_SW; // Down-Left
+      tank.direction = T_SW;
     } else {
-      tank.direction = T_W; // Left
+      tank.direction = T_W;
     }
-    hasMoved = true;
-  }
-  if (keys & KEY_RIGHT) {
-    newPos.x += 1;
+  } else if (keys & KEY_RIGHT) {
     if (keys & KEY_UP) {
-      tank.direction = T_NE; // Up-Right
+      tank.direction = T_NE;
     } else if (keys & KEY_DOWN) {
-      tank.direction = T_SE; // Down-Right
+      tank.direction = T_SE;
     } else {
-      tank.direction = T_E; // Right
+      tank.direction = T_E;
     }
-    hasMoved = true;
-  }
-  if (validateInput(newPos, tank)) {
-    tank.setPosition('x', newPos.x);
+  } else if (keys & KEY_UP) {
+    tank.direction = T_N;
+  } else if (keys & KEY_DOWN) {
+    tank.direction = T_S;
   }
 
-  if (hasMoved) {
-    // Only update the animation frame when the frame counter reaches the
-    // animation speed
-    if (frameCounter >= ANIMATION_SPEED) {
-      // Animate the tank sprite
-      tank.body.anim_frame = (tank.body.anim_frame - 1 + 3) % 3;
-      tank.animate();
-      // Reset the frame counter
-      frameCounter = 0;
+  // Accumulate fractional movement
+  static float accumulatedX = 0.0f;
+  static float accumulatedY = 0.0f;
+
+  // Handle Y movement
+  if (tank.direction == tank.body.rotation_angle) {
+    Position newPosY = {tank.getPosition('x'), tank.getPosition('y')};
+    if (keys & KEY_UP || keys & KEY_DOWN) {
+      float yMove = baseSpeed * (isDiagonal ? 0.707f : 1.0f);
+      float testY = accumulatedY + yMove;
+      int moveAmount = (int)testY;
+      
+      if (moveAmount != 0) {
+        if (keys & KEY_UP) {
+          newPosY.y -= moveAmount;
+        } else {
+          newPosY.y += moveAmount;
+        }
+        
+        if (validateInput(newPosY, tank)) {
+          tank.setPosition('y', newPosY.y);
+          hasMoved = true;
+          accumulatedY = testY - moveAmount;  // Only update accumulator if move was valid
+        }
+      } else {
+        accumulatedY = testY;  // Accumulate small movements
+      }
     }
+  }
+
+  // Handle X movement
+  if (tank.direction == tank.body.rotation_angle) {
+    Position newPosX = {tank.getPosition('x'), tank.getPosition('y')};
+    if (keys & KEY_LEFT || keys & KEY_RIGHT) {
+      float xMove = baseSpeed * (isDiagonal ? 0.707f : 1.0f);
+      float testX = accumulatedX + xMove;
+      int moveAmount = (int)testX;
+      
+      if (moveAmount != 0) {
+        if (keys & KEY_LEFT) {
+          newPosX.x -= moveAmount;
+        } else {
+          newPosX.x += moveAmount;
+        }
+        
+        if (validateInput(newPosX, tank)) {
+          tank.setPosition('x', newPosX.x);
+          hasMoved = true;
+          accumulatedX = testX - moveAmount;  // Only update accumulator if move was valid
+        }
+      } else {
+        accumulatedX = testX;  // Accumulate small movements
+      }
+    }
+  }
+
+  if (hasMoved && frameCounter >= ANIMATION_SPEED) {
+    tank.body.anim_frame = (tank.body.anim_frame - 1 + 3) % 3;
+    tank.updateAnimationFrames();
+    frameCounter = 0;
   }
 }
 
@@ -330,7 +361,7 @@ int main(void) {
 
   // Animate the tanks
   for (int i = 0; i < (int)tanks.size(); i++) {
-    tanks[i].animate();
+    tanks[i].updateAnimationFrames();
   }
 
   while (pmMainLoop()) {

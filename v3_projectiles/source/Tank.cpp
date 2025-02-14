@@ -10,6 +10,7 @@ Camdyn Rasque
 //
 //---------------------------------------------------------------------------------
 
+#include <math.h>
 #include "Tank.h"
 
 //---------------------------------------------------------------------------------
@@ -73,35 +74,47 @@ void Tank::setOffset(int x, int y) {
 
 Position &Tank::getPosition() { return body.pos; }
 
-void Tank::animate() {
+void Tank::updateAnimationFrames() {
   int frame = body.anim_frame + color;
   // Calculate the offset correctly for a 32x32 sprite with 3 frames
   u8 *offset = body.gfx_frame + frame * body.tile_size * body.tile_size;
 
   dmaCopy(offset, body.gfx_mem, body.tile_size * body.tile_size);
-  dmaCopy(turret.gfx_frame, turret.gfx_mem,
-          turret.tile_size * turret.tile_size);
+  dmaCopy(turret.gfx_frame, turret.gfx_mem, turret.tile_size * turret.tile_size);
+}
+
+void Tank::interpolateBodyRotation() {
+  // Normalize both angles to [0, 360) range first
+  float target_angle = fmod(fmod(direction, 360.0f) + 360.0f, 360.0f);
+  float current_angle = fmod(fmod(body.rotation_angle, 360.0f) + 360.0f, 360.0f);
+  
+  // Compute the shortest rotation direction
+  float angle_diff = target_angle - current_angle;
+  
+  // Adjust for crossing over 0/360 boundary
+  if (angle_diff > 180.0f) {
+      angle_diff -= 360.0f;
+  } else if (angle_diff < -180.0f) {
+      angle_diff += 360.0f;
+  }
+  
+  // Rotate in the shortest direction with smooth interpolation
+  if (fabs(angle_diff) > 0.1f) {  // Small threshold to prevent jittering
+      if (angle_diff > 0) {
+          body.rotation_angle += body_rotation_speed;
+      } else {
+          body.rotation_angle -= body_rotation_speed;
+      }
+  } else {
+      body.rotation_angle = target_angle;  // Snap to exact angle when very close
+  }
+  
+  // Keep the angle in [0, 360) range
+  body.rotation_angle = fmod(fmod(body.rotation_angle, 360.0f) + 360.0f, 360.0f);
 }
 
 void Tank::updateOAM() {
-  // Compute the shortest rotation direction
-  int angle_diff = direction - body.rotation_angle;
-
-  // Normalize to [-180, 180] range
-  angle_diff = (angle_diff + 540) % 360 - 180;  // Ensures wraparound at 0°/360°
-
-  // Rotate in the shortest direction
-  if (angle_diff > 0) {
-    body.rotation_angle += body_rotation_speed;
-    if (body.rotation_angle > direction && angle_diff < 180) {
-      body.rotation_angle = direction; // Prevent overshoot
-    }
-  } else if (angle_diff < 0) {
-    body.rotation_angle -= body_rotation_speed;
-    if (body.rotation_angle < direction && angle_diff > -180) {
-      body.rotation_angle = direction; // Prevent overshoot
-    }
-  }
+  interpolateBodyRotation();
 
   // Adjust for rotational miscalculations
   switch (direction) {
