@@ -84,27 +84,43 @@ void Tank::animate() {
 }
 
 void Tank::updateOAM() {
-  // Update rotation angle of the body
-  body.rotation_angle = (8 - direction) * 45 % 360;
+  // Compute the shortest rotation direction
+  int angle_diff = direction - body.rotation_angle;
+
+  // Normalize to [-180, 180] range
+  angle_diff = (angle_diff + 540) % 360 - 180;  // Ensures wraparound at 0°/360°
+
+  // Rotate in the shortest direction
+  if (angle_diff > 0) {
+    body.rotation_angle += body_rotation_speed;
+    if (body.rotation_angle > direction && angle_diff < 180) {
+      body.rotation_angle = direction; // Prevent overshoot
+    }
+  } else if (angle_diff < 0) {
+    body.rotation_angle -= body_rotation_speed;
+    if (body.rotation_angle < direction && angle_diff > -180) {
+      body.rotation_angle = direction; // Prevent overshoot
+    }
+  }
 
   // Adjust for rotational miscalculations
   switch (direction) {
-  case 3:
+  case T_SE: // Tank_Southeast
     body.tile_offset.x += 1;
-    break; // Down-Right
-  case 4:
+    break;
+  case T_S: // Tank_South
     body.tile_offset.x += 1;
-    break; // Down
-  case 5:
+    break;
+  case T_SW: // Tank_Southwest
     body.tile_offset.x += 1;
     body.tile_offset.y += 1;
-    break; // Down-Left
-  case 6:
+    break;
+  case T_W: // Tank_West
     body.tile_offset.y += 1;
-    break; // Left
-  case 7:
+    break;
+  case T_NW: // Tank_Northwest
     body.tile_offset.y += 1;
-    break; // Up-Left
+    break;
   }
 
   // Update the OAM

@@ -27,16 +27,19 @@ Camdyn Rasque
 
 //---------------------------------------------------------------------------------
 //
-// TYPE DEFINITIONS
+// GLOBALS
 //
 //---------------------------------------------------------------------------------
 
+// Constants
 const int CELL_SIZE = TANK_SIZE;
 const int ANIMATION_SPEED = 2;
+// Counters
 int frameCounter = 0;
 int spriteIdCount = 1;
-Cursor *cursor = nullptr;
-std::vector<Tank> tanks;
+// Global Refs
+Cursor *cursor = nullptr; // Player cursor
+std::vector<Tank> tanks; // All tanks on screen
 
 //---------------------------------------------------------------------------------
 //
@@ -159,12 +162,12 @@ void handleDirectionInput(Tank &tank, int &keys) {
   // Update user's up and down position
   if (keys & KEY_UP) {
     newPos.y -= 1;
-    tank.direction = 0;
+    tank.direction = T_N; // North
     hasMoved = true;
   }
   if (keys & KEY_DOWN) {
     newPos.y += 1;
-    tank.direction = 4; // Down
+    tank.direction = T_S; // South
     hasMoved = true;
   }
   if (validateInput(newPos, tank)) {
@@ -178,22 +181,22 @@ void handleDirectionInput(Tank &tank, int &keys) {
   if (keys & KEY_LEFT) {
     newPos.x -= 1;
     if (keys & KEY_UP) {
-      tank.direction = 7; // Up-Left
+      tank.direction = T_NW; // Up-Left
     } else if (keys & KEY_DOWN) {
-      tank.direction = 5; // Down-Left
+      tank.direction = T_SW; // Down-Left
     } else {
-      tank.direction = 6; // Left
+      tank.direction = T_W; // Left
     }
     hasMoved = true;
   }
   if (keys & KEY_RIGHT) {
     newPos.x += 1;
     if (keys & KEY_UP) {
-      tank.direction = 1; // Up-Right
+      tank.direction = T_NE; // Up-Right
     } else if (keys & KEY_DOWN) {
-      tank.direction = 3; // Down-Right
+      tank.direction = T_SE; // Down-Right
     } else {
-      tank.direction = 2; // Right
+      tank.direction = T_E; // Right
     }
     hasMoved = true;
   }

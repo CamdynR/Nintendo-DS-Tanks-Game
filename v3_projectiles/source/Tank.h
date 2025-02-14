@@ -14,10 +14,23 @@
 
 const int TANK_SIZE = 16;
 
-//---------------------------------------------------------------------
-// The color for the tank to use
-//---------------------------------------------------------------------
+//---------------------------------------------------------------------------------
+//
+// ENUMS
+//
+//---------------------------------------------------------------------------------
+
 enum TankColor { T_BLUE = 0, T_RED = 1 };
+enum TankDirection {
+  T_N = 0, // North
+  T_NE = 315, // Northeast
+  T_E = 270, // East
+  T_SE = 225, // Southeast
+  T_S = 180, // South
+  T_SW = 135, // Southwest
+  T_W = 90, // West
+  T_NW = 45 // Northwest
+};
 
 //---------------------------------------------------------------------------------
 //
@@ -34,6 +47,7 @@ struct Tank {
 
   int color; // Color of the tank (0 = blue, 1 = red)
 
+  int body_rotation_speed = 5;
   int height = TANK_SIZE; // Visual height of the tank in px within the Tile
   int width = TANK_SIZE;  // Visual height of the tank in px within the Tile
 
