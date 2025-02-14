@@ -17,6 +17,11 @@
 struct Cursor : Sprite {
   int height = 14;
   int width = 14;
+
+  /**
+ * @brief Initializes the cursor sprite.
+ */
+  Cursor();
 };
 
 //---------------------------------------------------------------------------------
@@ -24,11 +29,6 @@ struct Cursor : Sprite {
 // FUNCTION DECLARATIONS
 //
 //---------------------------------------------------------------------------------
-
-/**
- * @brief Initializes the cursor sprite.
- */
-void initCursor(Cursor &cursor);
 
 /**
  * @brief Draws a dotted line with exactly 8 small circles connecting two

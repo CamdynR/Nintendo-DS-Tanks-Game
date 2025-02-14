@@ -14,6 +14,7 @@ Camdyn Rasque
 #include <math.h>
 #include <nds.h>
 #include <unistd.h>
+#include <vector>
 
 #include "Cursor.h"
 #include "Position.h"
@@ -30,13 +31,12 @@ Camdyn Rasque
 //
 //---------------------------------------------------------------------------------
 
-const int MAX_TANKS = 2;
 const int CELL_SIZE = TANK_SIZE;
 const int ANIMATION_SPEED = 2;
 int frameCounter = 0;
 int spriteIdCount = 1;
-Cursor cursor;
-Tank tanks[MAX_TANKS];
+Cursor *cursor = nullptr;
+std::vector<Tank> tanks;
 
 //---------------------------------------------------------------------------------
 //
@@ -81,7 +81,7 @@ bool isWithinBounds(Position &pos, Tank &tank) {
  * @return true if no collision occurs, false if a collision is detected.
  */
 bool noTanksCollided(Position &pos, Tank &tank) {
-  for (int i = 0; i < MAX_TANKS; i++) {
+  for (int i = 0; i < (int)tanks.size(); i++) {
     if (&tank == &tanks[i]) continue; // Skip checking against itself
 
     // Grab the tank position
@@ -224,7 +224,7 @@ void handleTurretInput(Tank &tank, touchPosition &touch) {
   Position tankPos = tank.getPosition();
   // Calculate the angle between the tank and the touch position
   float angle =
-      calculateAngle(tankPos.x, tankPos.y, cursor.pos.x, cursor.pos.y);
+      calculateAngle(tankPos.x, tankPos.y, cursor->pos.x, cursor->pos.y);
   tank.turret.rotation_angle = 270 - angle;
 }
 
@@ -296,14 +296,12 @@ void initGraphics() {
 
 /**
  * @brief Updates sprite attributes for all tanks.
- * @param tanks Array of tanks to update.
- * @param numTanks Number of tanks in the array.
  */
-void updateSprites(Tank tanks[], int numTanks) {
+void updateSprites() {
   // Update the cursor first and foremost
-  cursor.updateOAM();
+  cursor->updateOAM();
   // Update all the tank sprite positions
-  for (int i = 0; i < numTanks; i++) {
+  for (int i = 0; i < (int)tanks.size(); i++) {
     // tanks[i].body.rotation_angle = angle;
     tanks[i].updateOAM();
   }
@@ -319,22 +317,23 @@ int main(void) {
   initGraphics();
 
   // Create player cursor
-  initCursor(cursor);
+  cursor = new Cursor();
+
   // Create the Player Tank
-  tanks[0] = createTank(CELL_SIZE, CELL_SIZE * 5.5, T_BLUE, spriteIdCount);
+  tanks.push_back(Tank(CELL_SIZE, CELL_SIZE * 5.5, T_BLUE, spriteIdCount));
   // Create the Enemy Tank
-  tanks[1] = createTank(SCREEN_WIDTH - (CELL_SIZE * 2), CELL_SIZE * 5.5, T_RED,
-                        spriteIdCount);
+  tanks.push_back(Tank(SCREEN_WIDTH - (CELL_SIZE * 2), CELL_SIZE * 5.5, T_RED,
+                        spriteIdCount));
 
   // Animate the tanks
-  for (int i = 0; i < MAX_TANKS; i++) {
+  for (int i = 0; i < (int)tanks.size(); i++) {
     tanks[i].animate();
   }
 
   while (pmMainLoop()) {
     processSpriteInput(tanks[0]);
-    updateSprites(tanks, MAX_TANKS);
-    processCursorInput(cursor, tanks[0]);
+    updateSprites();
+    processCursorInput(*cursor, tanks[0]);
 
     frameCounter++;
 

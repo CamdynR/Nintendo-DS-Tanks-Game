@@ -14,6 +14,11 @@
 
 const int TANK_SIZE = 16;
 
+//---------------------------------------------------------------------
+// The color for the tank to use
+//---------------------------------------------------------------------
+enum TankColor { T_BLUE = 0, T_RED = 1 };
+
 //---------------------------------------------------------------------------------
 //
 // TYPE DEFINITIONS
@@ -34,6 +39,11 @@ struct Tank {
 
   // 0 = N, 1 = NE, 2 = E, 3 = SE, 4 = S, 5 = SW, 6 = W, 7 = NW
   int direction = 0;
+
+  /*
+   * Struct constructor
+   */
+  Tank(int x, int y, TankColor color, int &spriteIdCount);
 
   /*
    * @brief Sets the position of one of the axes for the tank
@@ -76,11 +86,6 @@ struct Tank {
   void updateOAM();
 };
 
-//---------------------------------------------------------------------
-// The state of the sprite (which way it is walking)
-//---------------------------------------------------------------------
-enum TankColor { T_BLUE = 0, T_RED = 1 };
-
 //---------------------------------------------------------------------------------
 //
 // FUNCTION DECLARATIONS
@@ -91,26 +96,14 @@ enum TankColor { T_BLUE = 0, T_RED = 1 };
  * @brief Allocates and initializes sprite graphics for the tank body.
  * @param tank The tank object.
  * @param gfx The graphics data.
- * @param color The color of the tank.
  */
-void initTankBodyGfx(Tank *tank, u8 *gfx, int color);
+void initTankBodyGfx(Tank *tank, u8 *gfx);
 
 /**
  * @brief Allocates and initializes sprite graphics for the tank turret.
  * @param tank The tank object.
  * @param gfx The graphics data.
- * @param color The color of the tank.
  */
-void initTankTurretGfx(Tank *tank, u8 *gfx, int color);
-
-/**
- * @brief Creates a tank at the specified position.
- * @param x The starting x-coordinate.
- * @param y The starting y-coordinate.
- * @param color The color of the tank (0 = blue, 1 = red)
- * @param spriteIdCount The id count of all the sprites (for oam use)
- * @return A new Tank instance.
- */
-Tank createTank(int x, int y, TankColor color, int &spriteIdCount);
+void initTankTurretGfx(Tank *tank, u8 *gfx);
 
 #endif // TANK_H

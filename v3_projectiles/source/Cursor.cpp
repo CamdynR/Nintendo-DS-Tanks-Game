@@ -18,19 +18,19 @@ Camdyn Rasque
 //
 //---------------------------------------------------------------------------------
 
-void initCursor(Cursor &cursor) {
+Cursor::Cursor() {
   // Allocate 32x32 sprite graphics memory
-  cursor.gfx_mem =
-      oamAllocateGfx(&oamMain, cursor.sprite_size, cursor.color_format);
+  this->gfx_mem =
+      oamAllocateGfx(&oamMain, this->sprite_size, this->color_format);
   // Set the body_frame_gfx pointer to the start of the sprite sheet
-  cursor.gfx_frame =
-      (u8 *)sprite_sheetTiles + ((2 * 4) * cursor.tile_size * cursor.tile_size);
-  dmaCopy(cursor.gfx_frame, cursor.gfx_mem,
-          cursor.tile_size * cursor.tile_size);
+  this->gfx_frame =
+      (u8 *)sprite_sheetTiles + ((2 * 4) * this->tile_size * this->tile_size);
+  dmaCopy(this->gfx_frame, this->gfx_mem,
+          this->tile_size * this->tile_size);
 
   // Hide until shown on screen
-  cursor.hide = true;
-  cursor.tile_offset = {0, 8};
+  this->hide = true;
+  this->tile_offset = {0, 8};
 }
 
 //---------------------------------------------------------------------------------
