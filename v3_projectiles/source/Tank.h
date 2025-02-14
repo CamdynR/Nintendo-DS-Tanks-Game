@@ -20,17 +20,14 @@ const int TANK_SIZE = 16;
 //
 //---------------------------------------------------------------------------------
 
-struct Tank : Sprite {
+struct Tank {
   // Tank body sprite
-  u16 *body_gfx_mem;
-  u8 *body_frame_gfx;
+  Sprite body;
 
   // Turret sprite
-  u16 *turret_gfx_mem;
-  u8 *turret_frame_gfx;
+  Sprite turret;
 
-  int color;          // Color of the tank (0 = blue, 1 = red)
-  int anim_frame = 0; // Animation frame state (0-2)
+  int color; // Color of the tank (0 = blue, 1 = red)
 
   int height = TANK_SIZE; // Visual height of the tank in px within the Tile
   int width = TANK_SIZE;  // Visual height of the tank in px within the Tile
@@ -38,9 +35,32 @@ struct Tank : Sprite {
   // 0 = N, 1 = NE, 2 = E, 3 = SE, 4 = S, 5 = SW, 6 = W, 7 = NW
   int direction = 0;
 
-  float turret_angle = 0; // Turret's rotational angle
+  /*
+   * @brief Sets the position of one of the axes for the tank
+   * @param axis The axis to set (x or y)
+   * @param value The value to set the axis to
+   */
+  void setPosition(char axis, int value);
 
-  /**
+  /*
+   * @brief Sets the position of both axes for the tank
+   * @param x The x-coordinate
+   * @param y The y-coordinate
+   */
+  void setPosition(int x, int y);
+
+  /*
+   * @brief Gets the position of one of the axes for the tank
+   * @param axis The axis to get (x or y)
+   */
+  int getPosition(char axis);
+
+  /*
+   * @brief Gets the position of both of the axes for the tank
+   */
+  Position &getPosition();
+
+  /*
    * @brief Animates the tank sprite based on its state.
    */
   void animate();

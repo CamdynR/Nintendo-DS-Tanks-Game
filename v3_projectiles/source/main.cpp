@@ -18,7 +18,6 @@ Camdyn Rasque
 #include "Cursor.h"
 #include "Position.h"
 #include "Tank.h"
-#include "calico/types.h"
 #include "nds/arm9/background.h"
 #include "nds/arm9/video.h"
 #include "sprite-sheet.h"
@@ -84,10 +83,14 @@ bool noTanksCollided(Position &pos, Tank &tank) {
   for (int i = 0; i < MAX_TANKS; i++) {
     if (&tank == &tanks[i]) continue; // Skip checking against itself
 
-    bool xOverlap = !(pos.x + tank.width <= tanks[i].pos.x ||
-                      tanks[i].pos.x + tanks[i].width <= pos.x);
-    bool yOverlap = !(pos.y + tank.height <= tanks[i].pos.y ||
-                      tanks[i].pos.y + tanks[i].height <= pos.y);
+    // Grab the tank position
+    Position tankPos = tanks[i].getPosition();
+
+    // Check for overlap on the x and y axes
+    bool xOverlap = !(pos.x + tank.width <= tankPos.x ||
+                      tankPos.x + tanks[i].width <= pos.x);
+    bool yOverlap = !(pos.y + tank.height <= tankPos.y ||
+                      tankPos.y + tanks[i].height <= pos.y);
 
     if (xOverlap && yOverlap) {
       return false; // Collision detected
@@ -148,7 +151,8 @@ bool validateInput(Position &pos, Tank &tank) {
  * @param keys The pressed keys bitmask.
  */
 void handleDirectionInput(Tank &tank, int &keys) {
-  Position newPos = tank.pos; // Copy current position
+  // Copy current position
+  Position newPos = {tank.getPosition('x'), tank.getPosition('y')};
   bool hasMoved = false;
 
   // Update user's up and down position
@@ -162,9 +166,12 @@ void handleDirectionInput(Tank &tank, int &keys) {
     tank.direction = 4; // Down
     hasMoved = true;
   }
-  if (validateInput(newPos, tank)) tank.pos.y = newPos.y;
+  if (validateInput(newPos, tank)) {
+    tank.setPosition('y', newPos.y);
+  }
 
-  newPos = tank.pos; // Reset new position in case validation failed
+  // Reset new position in case validation failed
+  newPos = {tank.getPosition('x'), tank.getPosition('y')};
 
   // Update user's left and right position
   if (keys & KEY_LEFT) {
@@ -189,14 +196,16 @@ void handleDirectionInput(Tank &tank, int &keys) {
     }
     hasMoved = true;
   }
-  if (validateInput(newPos, tank)) tank.pos.x = newPos.x;
+  if (validateInput(newPos, tank)) {
+    tank.setPosition('x', newPos.x);
+  }
 
   if (hasMoved) {
     // Only update the animation frame when the frame counter reaches the
     // animation speed
     if (frameCounter >= ANIMATION_SPEED) {
       // Animate the tank sprite
-      tank.anim_frame = (tank.anim_frame - 1 + 3) % 3;
+      tank.body.anim_frame = (tank.body.anim_frame - 1 + 3) % 3;
       tank.animate();
       // Reset the frame counter
       frameCounter = 0;
@@ -210,9 +219,13 @@ void handleDirectionInput(Tank &tank, int &keys) {
  * @param touch The touch position data.
  */
 void handleTurretInput(Tank &tank, touchPosition &touch) {
+  // Grab the tank's position
+  Position tankPos = tank.getPosition();
+  // Calculate the angle between the tank and the touch position
   float angle =
-      calculateAngle(tank.pos.x, tank.pos.y, cursor.pos.x, cursor.pos.y);
-  tank.turret_angle = 270 - angle; // Update turret angle based on touch input
+      calculateAngle(tankPos.x, tankPos.y, cursor.pos.x, cursor.pos.y);
+  tank.turret.rotation_angle =
+      270 - angle; // Update turret angle based on touch input
 }
 
 /**
@@ -338,20 +351,20 @@ void updateSprites(Tank tanks[], int numTanks) {
     oamRotateScale(&oamMain, id, degreesToAngle(angle), 256, 256);
 
     // Update the tank sprite's position
-    oamSet(&oamMain, id, tanks[i].pos.x - 8 + rotAdjX,
-           tanks[i].pos.y - 8 + rotAdjY, 2, id, SpriteSize_32x32,
-           SpriteColorFormat_256Color,
-           tanks[i].body_gfx_mem, // Graphics pointer
+    Position tankPos = tanks[i].getPosition();
+    oamSet(&oamMain, id, tankPos.x - 8 + rotAdjX, tankPos.y - 8 + rotAdjY, 2,
+           id, SpriteSize_32x32, SpriteColorFormat_256Color,
+           tanks[i].body.gfx_mem, // Graphics pointer
            id, false, false, false, false, false);
 
     // Apply rotation to the turret
     oamRotateScale(&oamMain, id + MAX_TANKS,
-                   degreesToAngle(tanks[i].turret_angle), 256, 256);
+                   degreesToAngle(tanks[i].turret.rotation_angle), 256, 256);
 
     // Update the turret sprite's position
-    oamSet(&oamMain, id + MAX_TANKS, tanks[i].pos.x - 8, tanks[i].pos.y - 8, 1,
-           id + 1, SpriteSize_32x32, SpriteColorFormat_256Color,
-           tanks[i].turret_gfx_mem, // Graphics pointer
+    oamSet(&oamMain, id + MAX_TANKS, tankPos.x - 8, tankPos.y - 8, 1, id + 1,
+           SpriteSize_32x32, SpriteColorFormat_256Color,
+           tanks[i].turret.gfx_mem, // Graphics pointer
            id + MAX_TANKS, false, false, false, false, false);
   }
 }

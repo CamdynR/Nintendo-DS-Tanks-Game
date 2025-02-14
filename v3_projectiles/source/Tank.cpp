@@ -18,14 +18,40 @@ Camdyn Rasque
 //
 //---------------------------------------------------------------------------------
 
-void Tank::animate() {
-  int frame = this->anim_frame + this->color;
-  // Calculate the offset correctly for a 32x32 sprite with 3 frames
-  u8 *offset = this->body_frame_gfx + frame * this->tile_size * this->tile_size;
+void Tank::setPosition(char axis, int value) {
+  if (axis == 'x') {
+    body.pos.x = value;
+    turret.pos.x = value;
+  } else if (axis == 'y') {
+    body.pos.y = value;
+    turret.pos.y = value;
+  }
+}
 
-  dmaCopy(offset, this->body_gfx_mem, this->tile_size * this->tile_size);
-  dmaCopy(this->turret_frame_gfx, this->turret_gfx_mem,
-          this->tile_size * this->tile_size);
+void Tank::setPosition(int x, int y) {
+  body.pos = {x, y};
+  turret.pos = {x, y};
+}
+
+int Tank::getPosition(char axis) {
+  if (axis == 'x') {
+    return body.pos.x;
+  } else if (axis == 'y') {
+    return body.pos.y;
+  }
+  return -1;
+}
+
+Position &Tank::getPosition() { return body.pos; }
+
+void Tank::animate() {
+  int frame = body.anim_frame + color;
+  // Calculate the offset correctly for a 32x32 sprite with 3 frames
+  u8 *offset = body.gfx_frame + frame * body.tile_size * body.tile_size;
+
+  dmaCopy(offset, body.gfx_mem, body.tile_size * body.tile_size);
+  dmaCopy(turret.gfx_frame, turret.gfx_mem,
+          turret.tile_size * turret.tile_size);
 }
 
 //---------------------------------------------------------------------------------
@@ -34,34 +60,35 @@ void Tank::animate() {
 //
 //---------------------------------------------------------------------------------
 
-void initTankBodyGfx(Tank *tank, u8 *gfx, int color) {
+void initTankBodyGfx(Tank &tank, u8 *gfx) {
   // Allocate 32x32 sprite graphics memory
-  tank->body_gfx_mem =
+  tank.body.gfx_mem =
       oamAllocateGfx(&oamMain, SpriteSize_32x32, SpriteColorFormat_256Color);
   // Set the body_frame_gfx pointer to the start of the sprite sheet
-  tank->body_frame_gfx =
-      gfx + ((color * 3) * tank->tile_size * tank->tile_size);
+  tank.body.gfx_frame =
+      gfx + ((tank.color * 3) * tank.body.tile_size * tank.body.tile_size);
 }
 
-void initTankTurretGfx(Tank *tank, u8 *gfx, int color) {
+void initTankTurretGfx(Tank &tank, u8 *gfx) {
   // Allocate 32x32 sprite graphics memory
-  tank->turret_gfx_mem =
+  tank.turret.gfx_mem =
       oamAllocateGfx(&oamMain, SpriteSize_32x32, SpriteColorFormat_256Color);
   // Set the turret_frame_gfx pointer to the correct position in the sprite
   // sheet Assuming each sprite is 32x32 pixels and gfx is a linear array Blue
   // turret is in row 2, column 1 Red turret is in row 2, column 2
-  int row = 3;        // Row 2 (0-indexed)
-  int column = color; // Column 1 for blue (0), Column 2 for red (1)
-  tank->turret_frame_gfx = gfx + (row * tank->tile_size * tank->tile_size * 2) +
-                           (column * tank->tile_size * tank->tile_size);
+  int row = 3;             // Row 2 (0-indexed)
+  int column = tank.color; // Column 1 for blue (0), Column 2 for red (1)
+  tank.turret.gfx_frame =
+      gfx + (row * tank.turret.tile_size * tank.turret.tile_size * 2) +
+      (column * tank.turret.tile_size * tank.turret.tile_size);
 }
 
 Tank createTank(int x, int y, int color) {
   Tank tank = {{x, y}};
   tank.color = color;
 
-  initTankBodyGfx(&tank, (u8 *)sprite_sheetTiles, color);
-  initTankTurretGfx(&tank, (u8 *)sprite_sheetTiles, color);
+  initTankBodyGfx(tank, (u8 *)sprite_sheetTiles);
+  initTankTurretGfx(tank, (u8 *)sprite_sheetTiles);
 
   return tank;
 }

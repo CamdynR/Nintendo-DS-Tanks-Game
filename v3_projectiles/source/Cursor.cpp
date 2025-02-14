@@ -58,7 +58,8 @@ void handleCursorInput(Cursor &cursor, touchPosition &touch, int keys,
     cursor.pos.x = touch.px - 16;
     cursor.pos.y = touch.py - 7;
     // Show the user's touch on screen
-    drawDottedLine(userTank.pos.x + 8, userTank.pos.y + 8, cursor.pos.x + 15,
+    Position tankPos = userTank.getPosition();
+    drawDottedLine(tankPos.x + 8, tankPos.y + 8, cursor.pos.x + 15,
                    cursor.pos.y + 8);
   }
 }
