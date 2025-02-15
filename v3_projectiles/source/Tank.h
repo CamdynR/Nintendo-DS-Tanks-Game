@@ -5,6 +5,7 @@
 #include "calico/types.h"
 #include "sprite-sheet.h"
 #include <nds.h>
+#include <vector>
 
 //---------------------------------------------------------------------------------
 //
@@ -22,14 +23,14 @@ const int TANK_SIZE = 16;
 
 enum TankColor { T_BLUE = 0, T_RED = 1 };
 enum TankDirection {
-  T_N = 0, // North
+  T_N = 0,    // North
   T_NE = 315, // Northeast
-  T_E = 270, // East
+  T_E = 270,  // East
   T_SE = 225, // Southeast
-  T_S = 180, // South
+  T_S = 180,  // South
   T_SW = 135, // Southwest
-  T_W = 90, // West
-  T_NW = 45 // Northwest
+  T_W = 90,   // West
+  T_NW = 45   // Northwest
 };
 
 //---------------------------------------------------------------------------------
@@ -51,8 +52,7 @@ struct Tank {
   int height = TANK_SIZE; // Visual height of the tank in px within the Tile
   int width = TANK_SIZE;  // Visual height of the tank in px within the Tile
 
-  // 0 = N, 1 = NE, 2 = E, 3 = SE, 4 = S, 5 = SW, 6 = W, 7 = NW
-  int direction = 0;
+  TankDirection direction = T_N; // Start facing north
 
   /*
    * Struct constructor
@@ -102,9 +102,10 @@ struct Tank {
   void interpolateBodyRotation();
 
   /*
-   * Moves the tank in the specified direction. 
+   * Moves the tank in the specified direction.
    */
-  void move(TankDirection direction, int frameCounter);
+  void move(TankDirection direction, int frameCounter,
+            std::vector<Tank> &tanks);
 
   /*
    * @brief Updates the OAM for both the tank body and tank turret

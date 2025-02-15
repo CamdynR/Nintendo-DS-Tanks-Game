@@ -10,15 +10,9 @@ Camdyn Rasque
 //
 //---------------------------------------------------------------------------------
 
-#include <math.h>
 #include "Tank.h"
-
-float calculateAngle(int x1, int y1, int x2, int y2) {
-  float deltaX = x2 - x1;
-  float deltaY = y2 - y1;
-  float angle = atan2(deltaY, deltaX) * (180.0 / M_PI);
-  return angle < 0 ? angle + 360 : angle;
-}
+#include "stage-1.h"
+#include <vector>
 
 bool isWithinBounds(Position &pos, Tank &tank) {
   bool tooFarUp = pos.y < 0;
@@ -28,7 +22,7 @@ bool isWithinBounds(Position &pos, Tank &tank) {
   return !tooFarUp && !tooFarLeft && !tooFarDown && !tooFarRight;
 }
 
-bool noTanksCollided(Position &pos, Tank &tank) {
+bool noTanksCollided(Position &pos, Tank &tank, std::vector<Tank> tanks) {
   for (int i = 0; i < (int)tanks.size(); i++) {
     if (&tank == &tanks[i]) continue; // Skip checking against itself
 
@@ -69,7 +63,7 @@ bool noBarrierCollisions(Position pos, Tank &tank) {
   return true; // No collisions with barriers
 }
 
-bool validateInput(Position &pos, Tank &tank) {
-  return isWithinBounds(pos, tank) && noTanksCollided(pos, tank) &&
+bool validateInput(Position &pos, Tank &tank, std::vector<Tank> tanks) {
+  return isWithinBounds(pos, tank) && noTanksCollided(pos, tank, tanks) &&
          noBarrierCollisions(pos, tank);
 }

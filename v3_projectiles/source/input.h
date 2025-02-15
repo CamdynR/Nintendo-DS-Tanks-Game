@@ -1,6 +1,10 @@
 #ifndef INPUT_H
 #define INPUT_H
 
+#include "Position.h"
+#include "Tank.h"
+#include <vector>
+
 /**
  * @brief Calculates the angle between two points.
  * @param x1 The x-coordinate of the first point.
@@ -26,7 +30,7 @@ bool isWithinBounds(Position &pos, Tank &tank);
  * @param tank The tank being moved (used to determine size).
  * @return true if no collision occurs, false if a collision is detected.
  */
-bool noTanksCollided(Position &pos, Tank &tank);
+bool noTanksCollided(Position &pos, Tank &tank, std::vector<Tank> tanks);
 
 /**
  * @brief Checks if the tank's position collides with any barriers in the stage.
@@ -44,6 +48,6 @@ bool noBarrierCollisions(Position pos, Tank &tank);
  * @param tank The tank being moved (used to determine size).
  * @return true if the position is valid, false otherwise.
  */
-bool validateInput(Position &pos, Tank &tank);
+bool validateInput(Position &pos, Tank &tank, std::vector<Tank> tanks);
 
 #endif // INPUT_H

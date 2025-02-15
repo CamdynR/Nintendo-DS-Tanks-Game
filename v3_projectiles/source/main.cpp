@@ -22,7 +22,6 @@ Camdyn Rasque
 #include "nds/arm9/background.h"
 #include "nds/arm9/video.h"
 #include "sprite-sheet.h"
-#include "stage-1.h"
 #include "stage-1_bg.h"
 
 //---------------------------------------------------------------------------------
@@ -33,20 +32,18 @@ Camdyn Rasque
 
 // Constants
 const int CELL_SIZE = TANK_SIZE;
-const int ANIMATION_SPEED = 2;
 // Counters
 int frameCounter = 0;
 int spriteIdCount = 1;
 // Global Refs
 Cursor *cursor = nullptr; // Player cursor
-std::vector<Tank> tanks; // All tanks on screen
+std::vector<Tank> tanks;  // All tanks on screen
 
 //---------------------------------------------------------------------------------
 //
 // HELPER FUNCTIONS
 //
 //---------------------------------------------------------------------------------
-
 
 //---------------------------------------------------------------------------------
 //
@@ -61,7 +58,7 @@ std::vector<Tank> tanks; // All tanks on screen
  */
 void handleDirectionInput(Tank &tank, int &keys) {
   // Set initial direction based on combined key presses
-  TankDirection direction;
+  TankDirection direction = tank.direction;
   if (keys & KEY_LEFT) {
     if (keys & KEY_UP) {
       direction = T_NW;
@@ -84,7 +81,14 @@ void handleDirectionInput(Tank &tank, int &keys) {
     direction = T_S;
   }
 
-  tank.move(direction, frameCounter);
+  tank.move(direction, frameCounter, tanks);
+}
+
+float calculateAngle(int x1, int y1, int x2, int y2) {
+  float deltaX = x2 - x1;
+  float deltaY = y2 - y1;
+  float angle = atan2(deltaY, deltaX) * (180.0 / M_PI);
+  return angle < 0 ? angle + 360 : angle;
 }
 
 /**
@@ -196,7 +200,7 @@ int main(void) {
   tanks.push_back(Tank(CELL_SIZE, CELL_SIZE * 5.5, T_BLUE, spriteIdCount));
   // Create the Enemy Tank
   tanks.push_back(Tank(SCREEN_WIDTH - (CELL_SIZE * 2), CELL_SIZE * 5.5, T_RED,
-                        spriteIdCount));
+                       spriteIdCount));
 
   while (pmMainLoop()) {
     processSpriteInput(tanks[0]);

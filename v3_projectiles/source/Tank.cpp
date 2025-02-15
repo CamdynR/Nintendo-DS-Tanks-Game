@@ -10,9 +10,9 @@ Camdyn Rasque
 //
 //---------------------------------------------------------------------------------
 
-#include <math.h>
 #include "Tank.h"
 #include "input.h"
+#include <math.h>
 
 //---------------------------------------------------------------------------------
 //
@@ -85,105 +85,115 @@ void Tank::updateAnimationFrames() {
   u8 *offset = body.gfx_frame + frame * body.tile_size * body.tile_size;
 
   dmaCopy(offset, body.gfx_mem, body.tile_size * body.tile_size);
-  dmaCopy(turret.gfx_frame, turret.gfx_mem, turret.tile_size * turret.tile_size);
+  dmaCopy(turret.gfx_frame, turret.gfx_mem,
+          turret.tile_size * turret.tile_size);
 }
 
 void Tank::interpolateBodyRotation() {
   // Normalize both angles to [0, 360) range first
   float target_angle = fmod(fmod(direction, 360.0f) + 360.0f, 360.0f);
-  float current_angle = fmod(fmod(body.rotation_angle, 360.0f) + 360.0f, 360.0f);
-  
+  float current_angle =
+      fmod(fmod(body.rotation_angle, 360.0f) + 360.0f, 360.0f);
+
   // Compute the shortest rotation direction
   float angle_diff = target_angle - current_angle;
-  
+
   // Adjust for crossing over 0/360 boundary
   if (angle_diff > 180.0f) {
-      angle_diff -= 360.0f;
+    angle_diff -= 360.0f;
   } else if (angle_diff < -180.0f) {
-      angle_diff += 360.0f;
+    angle_diff += 360.0f;
   }
-  
+
   // Rotate in the shortest direction with smooth interpolation
-  if (fabs(angle_diff) > 0.1f) {  // Small threshold to prevent jittering
-      if (angle_diff > 0) {
-          body.rotation_angle += body_rotation_speed;
-      } else {
-          body.rotation_angle -= body_rotation_speed;
-      }
+  if (fabs(angle_diff) > 0.1f) { // Small threshold to prevent jittering
+    if (angle_diff > 0) {
+      body.rotation_angle += body_rotation_speed;
+    } else {
+      body.rotation_angle -= body_rotation_speed;
+    }
   } else {
-      body.rotation_angle = target_angle;  // Snap to exact angle when very close
+    body.rotation_angle = target_angle; // Snap to exact angle when very close
   }
-  
+
   // Keep the angle in [0, 360) range
-  body.rotation_angle = fmod(fmod(body.rotation_angle, 360.0f) + 360.0f, 360.0f);
+  body.rotation_angle =
+      fmod(fmod(body.rotation_angle, 360.0f) + 360.0f, 360.0f);
 }
 
-void Tank::move(TankDirection direction, int frameCounter) {
-  bool hasMoved = false;
-  int baseSpeed = 1;
+void Tank::move(TankDirection direction, int frameCounter,
+                std::vector<Tank> &tanks) {
+  this->direction = direction; // Save tank direction for linear interpolation
+  if (direction != body.rotation_angle)
+    return; // Don't move if not done rotating
+
+  bool hasMoved = false; // For checking
+  int baseSpeed = 1;     // For use with slightly slowing down diagonal speed
 
   // Accumulate fractional movement
   static float accumulatedX = 0.0f;
   static float accumulatedY = 0.0f;
 
-  bool isDiagonal = (direction == T_NE) || (direction == T_SE) || 
-  (direction == T_SW) || (direction == T_NW);
+  bool isDiagonal = (direction == T_NE) || (direction == T_SE) ||
+                    (direction == T_SW) || (direction == T_NW);
 
   // Handle Y movement
-  if (this->direction == this->body.rotation_angle) {
-    Position newPosY = {tank.getPosition('x'), tank.getPosition('y')};
-    if (keys & KEY_UP || keys & KEY_DOWN) {
-      float yMove = baseSpeed * (isDiagonal ? 0.707f : 1.0f);
-      float testY = accumulatedY + yMove;
-      int moveAmount = (int)testY;
-      
-      if (moveAmount != 0) {
-        if (keys & KEY_UP) {
-          newPosY.y -= moveAmount;
-        } else {
-          newPosY.y += moveAmount;
-        }
-        
-        if (validateInput(newPosY, tank)) {
-          tank.setPosition('y', newPosY.y);
-          hasMoved = true;
-          accumulatedY = testY - moveAmount;  // Only update accumulator if move was valid
-        }
+  Position newPosY = {getPosition('x'), getPosition('y')};
+  bool hasPosY = direction == T_NW || direction == T_N || direction == T_NE;
+  bool hasNegY = direction == T_SW || direction == T_S || direction == T_SE;
+  if (hasPosY || hasNegY) {
+    float yMove = baseSpeed * (isDiagonal ? 0.707f : 1.0f);
+    float testY = accumulatedY + yMove;
+    int moveAmount = (int)testY;
+
+    if (moveAmount != 0) {
+      if (hasPosY) {
+        newPosY.y -= moveAmount;
       } else {
-        accumulatedY = testY;  // Accumulate small movements
+        newPosY.y += moveAmount;
       }
+
+      if (validateInput(newPosY, *this, tanks)) {
+        setPosition('y', newPosY.y);
+        hasMoved = true;
+        accumulatedY =
+            testY - moveAmount; // Only update accumulator if move was valid
+      }
+    } else {
+      accumulatedY = testY; // Accumulate small movements
     }
   }
 
   // Handle X movement
-  if (tank.direction == tank.body.rotation_angle) {
-    Position newPosX = {tank.getPosition('x'), tank.getPosition('y')};
-    if (keys & KEY_LEFT || keys & KEY_RIGHT) {
-      float xMove = baseSpeed * (isDiagonal ? 0.707f : 1.0f);
-      float testX = accumulatedX + xMove;
-      int moveAmount = (int)testX;
-      
-      if (moveAmount != 0) {
-        if (keys & KEY_LEFT) {
-          newPosX.x -= moveAmount;
-        } else {
-          newPosX.x += moveAmount;
-        }
+  Position newPosX = {getPosition('x'), getPosition('y')};
+  bool hasPosX = direction == T_NE || direction == T_E || direction == T_SE;
+  bool hasNegX = direction == T_NW || direction == T_W || direction == T_SW;
+  if (hasPosX || hasNegX) {
+    float xMove = baseSpeed * (isDiagonal ? 0.707f : 1.0f);
+    float testX = accumulatedX + xMove;
+    int moveAmount = (int)testX;
 
-        if (validateInput(newPosX, tank)) {
-          tank.setPosition('x', newPosX.x);
-          hasMoved = true;
-          accumulatedX = testX - moveAmount;  // Only update accumulator if move was valid
-        }
+    if (moveAmount != 0) {
+      if (hasPosX) {
+        newPosX.x -= moveAmount;
       } else {
-        accumulatedX = testX;  // Accumulate small movements
+        newPosX.x += moveAmount;
       }
+
+      if (validateInput(newPosX, *this, tanks)) {
+        setPosition('x', newPosX.x);
+        hasMoved = true;
+        accumulatedX =
+            testX - moveAmount; // Only update accumulator if move was valid
+      }
+    } else {
+      accumulatedX = testX; // Accumulate small movements
     }
   }
 
-  if (hasMoved && frameCounter >= ANIMATION_SPEED) {
-    tank.body.anim_frame = (tank.body.anim_frame - 1 + 3) % 3;
-    tank.updateAnimationFrames();
+  if (hasMoved && frameCounter >= body.anim_speed) {
+    body.anim_frame = (body.anim_frame - 1 + 3) % 3;
+    updateAnimationFrames();
     frameCounter = 0;
   }
 }
@@ -209,6 +219,8 @@ void Tank::updateOAM() {
   case T_NW: // Tank_Northwest
     body.tile_offset.y += 1;
     break;
+  default:
+    setOffset(8, 8);
   }
 
   // Update the OAM
@@ -241,7 +253,7 @@ void initTankTurretGfx(Tank *tank, u8 *gfx) {
   // Set the turret_frame_gfx pointer to the correct position in the sprite
   // sheet Assuming each sprite is 32x32 pixels and gfx is a linear array Blue
   // turret is in row 2, column 1 Red turret is in row 2, column 2
-  int row = 3;             // Row 2 (0-indexed)
+  int row = 3;              // Row 2 (0-indexed)
   int column = tank->color; // Column 1 for blue (0), Column 2 for red (1)
   tank->turret.gfx_frame =
       gfx + (row * tank->turret.tile_size * tank->turret.tile_size * 2) +

@@ -12,6 +12,7 @@ struct Sprite {
   u8 *gfx_frame; // The current frame in the sprite sheet
 
   int anim_frame = 0; // The animation frame of the sprite
+  int anim_speed = 2; // Speed of the animation (higher == slower)
 
   float rotation_angle = 0; // The rotation angle of the sprite
 
