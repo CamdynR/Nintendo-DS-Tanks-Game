@@ -147,7 +147,6 @@ void handleTouchInput(Stage *stage, Cursor *cursor) {
   if (keys & KEY_TOUCH) {
     cursor->hide = false;                    // Show the cursor
     cursor->setPosition(touch.px, touch.py); // Update the cursor position
-    cursor->connectToTank(stage->tanks[0]);  // Draw the dotted line
     stage->tanks[0]->rotateTurret(touch);    // Rotate the tank turret
   } else {
     cursor->hide = true;

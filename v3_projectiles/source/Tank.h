@@ -81,8 +81,9 @@ enum TankBehavior {
 //
 //---------------------------------------------------------------------------------
 
-struct Stage; // Avoids circular dependencies
-struct Tank {
+class Stage; // Avoids circular dependencies
+class Tank {
+public:
   // Tank Component Sprites
   Sprite *body = new Sprite();
   Sprite *turret = new Sprite();

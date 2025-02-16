@@ -3,8 +3,9 @@
 
 #include "nds/arm9/video.h"
 
-struct Tank;
-struct Stage {
+class Tank;
+class Stage {
+public:
   static int frame_counter; // Keep track of frames
 
   int stage_num; // The number stage to load

@@ -4,8 +4,11 @@
 #include "Position.h"
 #include <nds.h>
 
-struct Sprite {
+class Sprite {
+private:
   static const int SPRITE_SHEET_COLS = 4;
+
+public:
   static int num_sprites; // The number of sprites on screen
 
   // Graphics related things

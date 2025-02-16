@@ -52,12 +52,10 @@ void Cursor::connectToTank(Tank *playerTank) {
   float y = tankCenterY;
 
   // Draw the line
-  glBegin2D();
   for (int i = 0; i <= steps; i++) {
     glBoxFilled(x - 1, y - 1, x + 1, y + 1,
                 RGB15(7, 23, 31)); // Draw smaller circle
     x += xIncrement;
     y += yIncrement;
   }
-  glEnd2D();
 }

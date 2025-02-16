@@ -14,10 +14,12 @@
 //
 //---------------------------------------------------------------------------------
 
-struct Cursor : Sprite {
+class Cursor : public Sprite {
+private:
   int height = 14;
   int width = 14;
 
+public:
   /**
    * @brief Initializes the cursor sprite.
    */

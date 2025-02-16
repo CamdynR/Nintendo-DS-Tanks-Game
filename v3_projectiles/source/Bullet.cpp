@@ -25,7 +25,7 @@ Camdyn Rasque
 Bullet::Bullet(BulletSpeed speed, int max_ricochets)
     : speed(speed), max_ricochets(max_ricochets) {
   // Update sprite sheet position
-  sprite_sheet_pos = {0, 11};
+  sprite_sheet_pos = {0, 12};
   // Make sure the bullet is centered
   tile_offset = {8, 8};
   // Initialize graphics and copy to VRAM

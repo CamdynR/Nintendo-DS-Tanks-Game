@@ -39,7 +39,7 @@ void initSprites() {
  * @brief Initializes the graphics system for 2D sprites.
  */
 void initGraphics() {
-  videoSetMode(MODE_5_3D);
+  videoSetMode(MODE_0_3D);
   glScreen2D();
   initSprites();
 
@@ -98,6 +98,21 @@ int main(void) {
     handleTouchInput(stage, cursor);
     // Update sprites in the Object Attribute Model
     updateSprites(stage, cursor);
+
+    // All GL drawing happens here after sprites have been moved
+    glBegin2D();
+    // Draw dotted line to connect to tank
+    if (!cursor->hide) {
+      cursor->connectToTank(stage->tanks[0]); // Draw the dotted line
+    }
+    // Draw bullets using GL2D
+    // for (int i = 0; i < stage->num_tanks; i++) {
+    //   for (int j = 0; j < stage->tanks[i]->active_bullets; j++) {
+    //     stage->tanks[i]->bullets[j]->draw();
+    //   }
+    // }
+    glEnd2D();
+
     // Increment the frame counter
     Stage::frame_counter++;
 
