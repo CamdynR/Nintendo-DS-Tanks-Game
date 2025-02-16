@@ -1,6 +1,7 @@
 #ifndef TANK_H
 #define TANK_H
 
+#include "Bullet.h"
 #include "Sprite.h"
 #include "calico/types.h"
 #include "sprite-sheet.h"
@@ -20,16 +21,58 @@ const int TANK_SIZE = 16;
 //
 //---------------------------------------------------------------------------------
 
-enum TankColor { T_BLUE = 0, T_RED = 1 };
+enum TankColor {
+  // Player Colors
+  T_COLOR_BLUE = 0, // Player 1
+  T_COLOR_RED = 1,  // Player 2
+  // Computer Colors
+  T_COLOR_BROWN = 2,
+  T_COLOR_ASH = 3,
+  T_COLOR_MARINE = 4,
+  T_COLOR_YELLOW = 5,
+  T_COLOR_PINK = 6,
+  T_COLOR_GREEN = 7,
+  T_COLOR_VIOLET = 8,
+  T_COLOR_WHITE = 9,
+  T_COLOR_BLACK = 10,
+};
+
 enum TankDirection {
-  T_N = 0,    // North
-  T_NE = 315, // Northeast
-  T_E = 270,  // East
-  T_SE = 225, // Southeast
-  T_S = 180,  // South
-  T_SW = 135, // Southwest
-  T_W = 90,   // West
-  T_NW = 45   // Northwest
+  T_DIR_N = 0,    // North
+  T_DIR_NE = 315, // Northeast
+  T_DIR_E = 270,  // East
+  T_DIR_SE = 225, // Southeast
+  T_DIR_S = 180,  // South
+  T_DIR_SW = 135, // Southwest
+  T_DIR_W = 90,   // West
+  T_DIR_NW = 45   // Northwest
+};
+
+enum TankMovement {
+  T_MOVEMENT_NORMAL = 0,
+  T_MOVEMENT_STATIONARY = 1,
+  T_MOVEMENT_SLOW = 2,
+  T_MOVEMENT_FAST = 3
+};
+
+enum TankFireRateCooldown {
+  // Player has no cooldown, self controlled
+  T_COOLDOWN_CONTROLLED = 0,
+  // Computer fire rate cooldowns
+  T_COOLDOWN_SLOW = 1,
+  T_COOLDOWN_FAST = 2
+};
+
+enum TankBehavior {
+  // Player behavior is controlled by them
+  T_BEHAVIOR_CONTROLLED = 0,
+  // Computer behavior
+  T_BEHAVIOR_PASSIVE = 1,
+  T_BEHAVIOR_DEFENSIVE = 2,
+  T_BEHAVIOR_INCAUTIOUS = 3,
+  T_BEHAVIOR_OFFENSIVE = 4,
+  T_BEHAVIOR_ACTIVE = 5,
+  T_BEHAVIOR_DYNAMIC = 6,
 };
 
 //---------------------------------------------------------------------------------
@@ -40,24 +83,39 @@ enum TankDirection {
 
 struct Stage; // Avoids circular dependencies
 struct Tank {
-  // Tank body sprite
+  // Tank Component Sprites
   Sprite body;
-
-  // Turret sprite
   Sprite turret;
 
-  int color; // Color of the tank (0 = blue, 1 = red)
+  // Tank Attributes
+  TankDirection direction; // Start facing north
+  TankMovement movement;   // How fast the tank moves
+  TankColor color;         // Color of the tank - Default to player
+  TankFireRateCooldown fire_rate_cooldown; // Default to player
+  TankBehavior behavior;                   // Default to player
 
+  // Sprite Attributes
   int body_rotation_speed = 5;
   int height = TANK_SIZE; // Visual height of the tank in px within the Tile
   int width = TANK_SIZE;  // Visual height of the tank in px within the Tile
 
-  TankDirection direction = T_N; // Start facing north
+  // Bullet related attributes
+  BulletSpeed bullet_speed;                  // Speed of the bullets
+  static const int MAX_POSSIBLE_BULLETS = 5; // Max any one tank can have
+  Bullet *bullets[MAX_POSSIBLE_BULLETS];     // Hold the bullet sprites
+  int max_bullets = MAX_POSSIBLE_BULLETS;    // Default to player
+  int max_bullet_ricochets;
+  int active_bullets = 0;
 
   /*
    * Struct constructor
    */
   Tank(int x, int y, TankColor color);
+
+  /*
+   * Struct deconstructor
+   */
+  ~Tank();
 
   /*
    * @brief Sets the position of one of the axes for the tank
@@ -88,12 +146,6 @@ struct Tank {
    * @brief Sets the offset of both of the axes for the tank
    */
   void setOffset(int x, int y);
-
-  /*
-   * @brief Updates the selected animation frame of the tank
-   *        sprites based on its state.
-   */
-  void updateAnimationFrames();
 
   /*
    * @brief Uses LERP to smoothly rotate the tank body in between

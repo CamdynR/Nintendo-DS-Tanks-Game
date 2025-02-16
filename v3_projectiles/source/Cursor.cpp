@@ -19,7 +19,10 @@ Camdyn Rasque
 //---------------------------------------------------------------------------------
 
 Cursor::Cursor() {
-  initGfx(3, 3);
+  // Set sprite sheet position
+  this->sprite_sheet_pos = {3, 11};
+  // Update GFX
+  initGfx();
 
   // Assign an ID
   this->id = Sprite::num_sprites++;

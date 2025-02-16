@@ -3,7 +3,7 @@
 
 //======================================================================
 //
-//	stage_1_bg, 256x192@16, 
+//	stage_1_bg, 256x192@16,
 //	Alphabit on.
 //	+ bitmap lz77 compressed
 //	Total size: 29748 = 29748
@@ -14,12 +14,12 @@
 //
 //======================================================================
 
-#ifndef GRIT_STAGE_1_BG_H
-#define GRIT_STAGE_1_BG_H
+#ifndef GRIT_DIR_STAGE_1_BG_H
+#define GRIT_DIR_STAGE_1_BG_H
 
 #define stage_1_bgBitmapLen 29748
 extern const unsigned int stage_1_bgBitmap[7437];
 
-#endif // GRIT_STAGE_1_BG_H
+#endif // GRIT_DIR_STAGE_1_BG_H
 
 //}}BLOCK(stage_1_bg)

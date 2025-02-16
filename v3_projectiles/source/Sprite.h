@@ -5,7 +5,7 @@
 #include <nds.h>
 
 struct Sprite {
-  static const int SPRITE_SHEET_COLS = 3;
+  static const int SPRITE_SHEET_COLS = 4;
   static int num_sprites; // The number of sprites on screen
 
   // Graphics related things
@@ -15,7 +15,9 @@ struct Sprite {
   Position pos = {0, 0};
   int tile_size = 32;
 
-  int anim_frame = 0; // The animation frame of the sprite
+  Position sprite_sheet_pos = {0, 0}; // x,y coord on sprite sheet
+  int num_anim_frames = 3;            // Number of frames in animation cycle
+  int anim_frame = 0;                 // The animation frame of the sprite
   int anim_speed = 2; // Speed of the animation (higher == slower)
 
   float rotation_angle = 0; // The rotation angle of the sprite
@@ -24,10 +26,20 @@ struct Sprite {
 
   /**
    * @brief Initialize the sprite graphics, sets gfx_mem and gfx_frame
-   * @param col The column in the sprite sheet (1 indexed)
-   * @param row The row in the sprite sheet (1 indexed)
    */
-  void initGfx(int col, int row);
+  void initGfx();
+
+  /*
+   * @brief Updates the gfx_frame reference with the new animation frame
+   *        of the sprite based on its state.
+   */
+  void incrementAnimationFrame(bool backwards = false);
+
+  /*
+   * @brief Needs to be called once per frame, updates VRAM with
+   *        the latest sprite gfx frame
+   */
+  void copyGfxFrameToVRAM();
 
   /*
    * @brief Updates the object attribute memory

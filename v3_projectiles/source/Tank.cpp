@@ -35,12 +35,93 @@ float calculateAngle(int x1, int y1, int x2, int y2) {
 //
 //---------------------------------------------------------------------------------
 
-Tank::Tank(int x, int y, TankColor color) {
+Tank::Tank(int x, int y, TankColor color) : color(color) {
+  // Set tank attributes base on the tank color
+  switch (color) {
+  case T_COLOR_BROWN:
+    movement = T_MOVEMENT_STATIONARY;
+    bullet_speed = B_SPEED_NORMAL;
+    fire_rate_cooldown = T_COOLDOWN_SLOW;
+    max_bullet_ricochets = 1;
+    max_bullets = 1;
+    behavior = T_BEHAVIOR_PASSIVE;
+    break;
+  case T_COLOR_ASH:
+    movement = T_MOVEMENT_SLOW;
+    bullet_speed = B_SPEED_NORMAL;
+    fire_rate_cooldown = T_COOLDOWN_SLOW;
+    max_bullet_ricochets = 1;
+    max_bullets = 1;
+    behavior = T_BEHAVIOR_DEFENSIVE;
+    break;
+  case T_COLOR_MARINE:
+    movement = T_MOVEMENT_SLOW;
+    bullet_speed = B_SPEED_FAST;
+    fire_rate_cooldown = T_COOLDOWN_SLOW;
+    max_bullet_ricochets = 0;
+    max_bullets = 1;
+    behavior = T_BEHAVIOR_DEFENSIVE;
+    break;
+  case T_COLOR_YELLOW:
+    movement = T_MOVEMENT_NORMAL;
+    bullet_speed = B_SPEED_NORMAL;
+    fire_rate_cooldown = T_COOLDOWN_SLOW;
+    max_bullet_ricochets = 1;
+    max_bullets = 1;
+    behavior = T_BEHAVIOR_INCAUTIOUS;
+    break;
+  case T_COLOR_PINK:
+    movement = T_MOVEMENT_SLOW;
+    bullet_speed = B_SPEED_NORMAL;
+    fire_rate_cooldown = T_COOLDOWN_FAST;
+    max_bullet_ricochets = 1;
+    max_bullets = 3;
+    behavior = T_BEHAVIOR_OFFENSIVE;
+    break;
+  case T_COLOR_GREEN:
+    movement = T_MOVEMENT_STATIONARY;
+    bullet_speed = B_SPEED_FAST;
+    fire_rate_cooldown = T_COOLDOWN_FAST;
+    max_bullet_ricochets = 2;
+    max_bullets = 2;
+    behavior = T_BEHAVIOR_ACTIVE;
+    break;
+  case T_COLOR_VIOLET:
+    movement = T_MOVEMENT_NORMAL;
+    bullet_speed = B_SPEED_NORMAL;
+    fire_rate_cooldown = T_COOLDOWN_FAST;
+    max_bullet_ricochets = 1;
+    max_bullets = 5;
+    behavior = T_BEHAVIOR_OFFENSIVE;
+    break;
+  case T_COLOR_WHITE:
+    movement = T_MOVEMENT_SLOW;
+    bullet_speed = B_SPEED_NORMAL;
+    fire_rate_cooldown = T_COOLDOWN_FAST;
+    max_bullet_ricochets = 1;
+    max_bullets = 5;
+    behavior = T_BEHAVIOR_OFFENSIVE;
+    break;
+  case T_COLOR_BLACK:
+    movement = T_MOVEMENT_FAST;
+    bullet_speed = B_SPEED_FAST;
+    fire_rate_cooldown = T_COOLDOWN_FAST;
+    max_bullet_ricochets = 0;
+    max_bullets = 3;
+    behavior = T_BEHAVIOR_DYNAMIC;
+    break;
+  default:
+    movement = T_MOVEMENT_NORMAL;
+    bullet_speed = B_SPEED_NORMAL;
+    fire_rate_cooldown = T_COOLDOWN_CONTROLLED;
+    max_bullet_ricochets = 1;
+    max_bullets = 5;
+    behavior = T_BEHAVIOR_CONTROLLED;
+  }
+
   // Update the position of both sprites
   this->setPosition(x, y);
   this->setOffset(8, 8);
-  // Set the tank's color and offsets for body and turret
-  this->color = color;
 
   // Set the oam attributes for the tank body
   this->body.id = Sprite::num_sprites++;
@@ -56,11 +137,24 @@ Tank::Tank(int x, int y, TankColor color) {
   this->turret.affine_index = this->turret.id;
 
   // Initialize the tank body and turret graphics
-  this->body.initGfx(1, 1 + color);
-  this->turret.initGfx(1 + color, 3);
+  this->body.sprite_sheet_pos = {0, 0 + color};
+  this->turret.sprite_sheet_pos = {3, 0 + color};
+  this->body.initGfx();
+  this->turret.initGfx();
 
   // Set the initial animation frames
-  this->updateAnimationFrames();
+  this->body.copyGfxFrameToVRAM();
+  this->turret.copyGfxFrameToVRAM();
+}
+
+Tank::~Tank() {
+  // Clean up any remaining bullets
+  for (int i = 0; i < MAX_POSSIBLE_BULLETS; i++) {
+    if (bullets[i] != nullptr) {
+      delete bullets[i];
+      bullets[i] = nullptr;
+    }
+  }
 }
 
 void Tank::setPosition(char axis, int value) {
@@ -93,16 +187,6 @@ void Tank::setOffset(int x, int y) {
 }
 
 Position &Tank::getPosition() { return body.pos; }
-
-void Tank::updateAnimationFrames() {
-  int frame = body.anim_frame + color;
-  // Calculate the offset correctly for a 32x32 sprite with 3 frames
-  u8 *offset = body.gfx_frame + frame * body.tile_size * body.tile_size;
-
-  dmaCopy(offset, body.gfx_mem, body.tile_size * body.tile_size);
-  dmaCopy(turret.gfx_frame, turret.gfx_mem,
-          turret.tile_size * turret.tile_size);
-}
 
 void Tank::interpolateBodyRotation() {
   // Normalize both angles to [0, 360) range first
@@ -147,13 +231,15 @@ void Tank::move(TankDirection direction, Stage *stage) {
   static float accumulatedX = 0.0f;
   static float accumulatedY = 0.0f;
 
-  bool isDiagonal = (direction == T_NE) || (direction == T_SE) ||
-                    (direction == T_SW) || (direction == T_NW);
+  bool isDiagonal = (direction == T_DIR_NE) || (direction == T_DIR_SE) ||
+                    (direction == T_DIR_SW) || (direction == T_DIR_NW);
 
   // Handle Y movement
   Position newPosY = {getPosition('x'), getPosition('y')};
-  bool hasPosY = direction == T_NW || direction == T_N || direction == T_NE;
-  bool hasNegY = direction == T_SW || direction == T_S || direction == T_SE;
+  bool hasPosY =
+      direction == T_DIR_NW || direction == T_DIR_N || direction == T_DIR_NE;
+  bool hasNegY =
+      direction == T_DIR_SW || direction == T_DIR_S || direction == T_DIR_SE;
   if (hasPosY || hasNegY) {
     float yMove = baseSpeed * (isDiagonal ? 0.707f : 1.0f);
     float testY = accumulatedY + yMove;
@@ -179,8 +265,10 @@ void Tank::move(TankDirection direction, Stage *stage) {
 
   // Handle X movement
   Position newPosX = {getPosition('x'), getPosition('y')};
-  bool hasPosX = direction == T_NE || direction == T_E || direction == T_SE;
-  bool hasNegX = direction == T_NW || direction == T_W || direction == T_SW;
+  bool hasPosX =
+      direction == T_DIR_NE || direction == T_DIR_E || direction == T_DIR_SE;
+  bool hasNegX =
+      direction == T_DIR_NW || direction == T_DIR_W || direction == T_DIR_SW;
   if (hasPosX || hasNegX) {
     float xMove = baseSpeed * (isDiagonal ? 0.707f : 1.0f);
     float testX = accumulatedX + xMove;
@@ -205,8 +293,8 @@ void Tank::move(TankDirection direction, Stage *stage) {
   }
 
   if (hasMoved && Stage::frame_counter >= body.anim_speed) {
-    body.anim_frame = (body.anim_frame - 1 + 3) % 3;
-    updateAnimationFrames();
+    body.incrementAnimationFrame(true);
+    body.copyGfxFrameToVRAM();
     Stage::frame_counter = 0;
   }
 }
@@ -225,20 +313,20 @@ void Tank::updateOAM() {
 
   // Adjust for rotational miscalculations
   switch (direction) {
-  case T_SE: // Tank_Southeast
+  case T_DIR_SE: // Tank_Southeast
     body.tile_offset.x += 1;
     break;
-  case T_S: // Tank_South
+  case T_DIR_S: // Tank_South
     body.tile_offset.x += 1;
     break;
-  case T_SW: // Tank_Southwest
+  case T_DIR_SW: // Tank_Southwest
     body.tile_offset.x += 1;
     body.tile_offset.y += 1;
     break;
-  case T_W: // Tank_West
+  case T_DIR_W: // Tank_West
     body.tile_offset.y += 1;
     break;
-  case T_NW: // Tank_Northwest
+  case T_DIR_NW: // Tank_Northwest
     body.tile_offset.y += 1;
     break;
   default:

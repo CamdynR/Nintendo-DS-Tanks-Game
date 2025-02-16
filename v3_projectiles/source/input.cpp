@@ -92,24 +92,24 @@ void handleDirectionInput(Tank *tank, Stage *stage) {
   TankDirection direction = tank->direction;
   if (keys & KEY_LEFT) {
     if (keys & KEY_UP) {
-      direction = T_NW;
+      direction = T_DIR_NW;
     } else if (keys & KEY_DOWN) {
-      direction = T_SW;
+      direction = T_DIR_SW;
     } else {
-      direction = T_W;
+      direction = T_DIR_W;
     }
   } else if (keys & KEY_RIGHT) {
     if (keys & KEY_UP) {
-      direction = T_NE;
+      direction = T_DIR_NE;
     } else if (keys & KEY_DOWN) {
-      direction = T_SE;
+      direction = T_DIR_SE;
     } else {
-      direction = T_E;
+      direction = T_DIR_E;
     }
   } else if (keys & KEY_UP) {
-    direction = T_N;
+    direction = T_DIR_N;
   } else if (keys & KEY_DOWN) {
-    direction = T_S;
+    direction = T_DIR_S;
   }
 
   // If any direction was pressed

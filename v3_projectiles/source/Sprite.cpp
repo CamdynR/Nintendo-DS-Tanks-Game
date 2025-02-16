@@ -21,18 +21,33 @@ Camdyn Rasque
 
 int Sprite::num_sprites = 0; // Initialize the total number of sprites
 
-void Sprite::initGfx(int col, int row) {
+void Sprite::initGfx() {
   // Allocate 32x32 sprite graphics memory
-  this->gfx_mem =
-      oamAllocateGfx(&oamMain, this->sprite_size, this->color_format);
+  gfx_mem = oamAllocateGfx(&oamMain, sprite_size, color_format);
 
   // Set the frame_gfx pointer to the right position in the sprite sheet
-  int sprite_index = ((row - 1) * Sprite::SPRITE_SHEET_COLS + (col - 1));
-  this->gfx_frame = (u8 *)sprite_sheetTiles +
-                    (sprite_index * this->tile_size * this->tile_size);
+  int sprite_index =
+      sprite_sheet_pos.y * Sprite::SPRITE_SHEET_COLS + sprite_sheet_pos.x;
+  gfx_frame = (u8 *)sprite_sheetTiles + (sprite_index * tile_size * tile_size);
 
   // Copy the frame graphics into memory
-  dmaCopy(this->gfx_frame, this->gfx_mem, this->tile_size * this->tile_size);
+  dmaCopy(gfx_frame, gfx_mem, tile_size * tile_size);
+}
+
+void Sprite::incrementAnimationFrame(bool backwards) {
+  if (backwards) {
+    anim_frame = (anim_frame - 1 + num_anim_frames) % num_anim_frames;
+  } else {
+    anim_frame = (anim_frame + 1) % num_anim_frames;
+  }
+  // Match initGfx formula
+  int sprite_index = ((sprite_sheet_pos.y) * Sprite::SPRITE_SHEET_COLS +
+                      (sprite_sheet_pos.x + anim_frame));
+  gfx_frame = (u8 *)sprite_sheetTiles + (sprite_index * tile_size * tile_size);
+}
+
+void Sprite::copyGfxFrameToVRAM() {
+  dmaCopy(gfx_frame, gfx_mem, tile_size * tile_size);
 }
 
 void Sprite::updateOAM() {
