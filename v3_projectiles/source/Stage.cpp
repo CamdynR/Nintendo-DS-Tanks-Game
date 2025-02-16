@@ -12,8 +12,8 @@ Camdyn Rasque
 
 #include "Stage.h"
 #include "Tank.h"
-#include "stage-1.h"
-#include "stage-1_bg.h"
+#include "stages/stage-1.h"
+#include "stages/stage-1_bg.h"
 
 //-------------------------------------------------------------------------------
 //

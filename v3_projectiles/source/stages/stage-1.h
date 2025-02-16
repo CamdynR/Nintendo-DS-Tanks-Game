@@ -1,8 +1,8 @@
 #ifndef STAGE_1_H
 #define STAGE_1_H
 
-#include "Stage.h"
-#include "Tank.h"
+#include "../Stage.h"
+#include "../Tank.h"
 #include "nds/arm9/video.h"
 
 const int STAGE_1_WIDTH = 256;
