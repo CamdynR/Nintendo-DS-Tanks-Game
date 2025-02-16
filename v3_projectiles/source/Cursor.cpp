@@ -19,69 +19,41 @@ Camdyn Rasque
 //---------------------------------------------------------------------------------
 
 Cursor::Cursor() {
-  // Allocate 32x32 sprite graphics memory
-  this->gfx_mem =
-      oamAllocateGfx(&oamMain, this->sprite_size, this->color_format);
-  // Set the body_frame_gfx pointer to the start of the sprite sheet
-  this->gfx_frame =
-      (u8 *)sprite_sheetTiles + ((2 * 4) * this->tile_size * this->tile_size);
-  dmaCopy(this->gfx_frame, this->gfx_mem,
-          this->tile_size * this->tile_size);
+  initGfx(3, 3);
 
+  // Assign an ID
+  this->id = Sprite::num_sprites++;
+  this->palette_alpha = this->id;
+  this->affine_index = this->id;
   // Hide until shown on screen
   this->hide = true;
-  this->tile_offset = {0, 8};
+  this->tile_offset = {16, 16};
 }
 
-//---------------------------------------------------------------------------------
-//
-// HELPER FUNCTIONS
-//
-//---------------------------------------------------------------------------------
+void Cursor::setPosition(int x, int y) { pos = {x, y}; }
 
-void drawDottedLine(int x1, int y1, int x2, int y2) {
-  int dx = x2 - x1;
-  int dy = y2 - y1;
+void Cursor::connectToTank(Tank *playerTank) {
+  // Grab the center of the player tank
+  Position tankPos = playerTank->getPosition();
+  int tankCenterX = tankPos.x + playerTank->body.tile_offset.x;
+  int tankCenterY = tankPos.y + playerTank->body.tile_offset.y;
+
+  // Math to connect the two points
+  int dx = pos.x - tankCenterX;
+  int dy = pos.y - tankCenterY;
   int steps = 8; // Always have exactly 8 dots
   float xIncrement = dx / (float)steps;
   float yIncrement = dy / (float)steps;
-  float x = x1;
-  float y = y1;
+  float x = tankCenterX;
+  float y = tankCenterY;
 
+  // Draw the line
+  glBegin2D();
   for (int i = 0; i <= steps; i++) {
     glBoxFilled(x - 1, y - 1, x + 1, y + 1,
                 RGB15(7, 23, 31)); // Draw smaller circle
     x += xIncrement;
     y += yIncrement;
-  }
-}
-
-void handleCursorInput(Cursor &cursor, touchPosition &touch, int keys,
-                       Tank &userTank) {
-  if (touch.rawx != 0 && touch.rawy != 0) {
-    cursor.pos.x = touch.px - 16;
-    cursor.pos.y = touch.py - 7;
-    // Show the user's touch on screen
-    Position tankPos = userTank.getPosition();
-    drawDottedLine(tankPos.x + 8, tankPos.y + 8, cursor.pos.x + 15,
-                   cursor.pos.y + 8);
-  }
-}
-
-void processCursorInput(Cursor &cursor, Tank &userTank) {
-  glBegin2D();
-  // Button Input
-  scanKeys();
-  int keys = keysHeld();
-  // Touch Input
-  touchPosition touch;
-  touchRead(&touch);
-  // Handle touch input
-  if (keys & KEY_TOUCH) {
-    cursor.hide = false;
-    handleCursorInput(cursor, touch, keys, userTank);
-  } else {
-    cursor.hide = true;
   }
   glEnd2D();
 }

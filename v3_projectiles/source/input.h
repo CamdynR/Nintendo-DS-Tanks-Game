@@ -1,9 +1,10 @@
 #ifndef INPUT_H
 #define INPUT_H
 
+#include "Cursor.h"
 #include "Position.h"
+#include "Stage.h"
 #include "Tank.h"
-#include <vector>
 
 /**
  * @brief Calculates the angle between two points.
@@ -28,26 +29,43 @@ bool isWithinBounds(Position &pos, Tank &tank);
  * tank.
  * @param pos The position to check.
  * @param tank The tank being moved (used to determine size).
+ * @param stage The stage to check tank collisions on
  * @return true if no collision occurs, false if a collision is detected.
  */
-bool noTanksCollided(Position &pos, Tank &tank, std::vector<Tank> tanks);
+bool noTanksCollided(Position &pos, Tank &tank, Stage *stage);
 
 /**
  * @brief Checks if the tank's position collides with any barriers in the stage.
  * @param pos The position to check.
  * @param tank The tank being moved (used to determine size).
+ * @param stage The stage to check barrier collisions on
  * @return true if no collisions with barriers occur, false if a collision is
  * detected.
  */
-bool noBarrierCollisions(Position pos, Tank &tank);
+bool noBarrierCollisions(Position pos, Tank &tank, Stage *stage);
 
 /**
  * @brief Validates if a given position is allowed based on screen bounds and
  * collisions.
  * @param pos The position to validate.
  * @param tank The tank being moved (used to determine size).
+ * @param stage The stage to validate input on
  * @return true if the position is valid, false otherwise.
  */
-bool validateInput(Position &pos, Tank &tank, std::vector<Tank> tanks);
+bool validateInput(Position &pos, Tank *tank, Stage *stage);
+
+/**
+ * @brief Handles user input to update the tank's position.
+ * @param tank The tank object to update.
+ * @param stage The stage to handle direction input on
+ */
+void handleDirectionInput(Tank *tank, Stage *stage);
+
+/**
+ * @brief Handles touch input to update the tank's turret angle.
+ * @param playerTank The tank object to update.
+ * @param cursor The player's cursor sprite.
+ */
+void handleTouchInput(Tank *playerTank, Cursor *cursor);
 
 #endif // INPUT_H

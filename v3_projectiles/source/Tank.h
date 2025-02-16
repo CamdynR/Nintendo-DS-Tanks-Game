@@ -5,7 +5,6 @@
 #include "calico/types.h"
 #include "sprite-sheet.h"
 #include <nds.h>
-#include <vector>
 
 //---------------------------------------------------------------------------------
 //
@@ -39,6 +38,7 @@ enum TankDirection {
 //
 //---------------------------------------------------------------------------------
 
+struct Stage; // Avoids circular dependencies
 struct Tank {
   // Tank body sprite
   Sprite body;
@@ -57,7 +57,7 @@ struct Tank {
   /*
    * Struct constructor
    */
-  Tank(int x, int y, TankColor color, int &spriteIdCount);
+  Tank(int x, int y, TankColor color);
 
   /*
    * @brief Sets the position of one of the axes for the tank
@@ -104,8 +104,12 @@ struct Tank {
   /*
    * Moves the tank in the specified direction.
    */
-  void move(TankDirection direction, int frameCounter,
-            std::vector<Tank> &tanks);
+  void move(TankDirection direction, Stage *stage);
+
+  /*
+   * Rotates the tank's turret to the touch position
+   */
+  void rotateTurret(touchPosition &touch);
 
   /*
    * @brief Updates the OAM for both the tank body and tank turret

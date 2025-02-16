@@ -11,8 +11,23 @@ Camdyn Rasque
 //---------------------------------------------------------------------------------
 
 #include "Tank.h"
-#include "input.h"
+#include "Input.h"
+#include "Sprite.h"
+#include "Stage.h"
 #include <math.h>
+
+//---------------------------------------------------------------------------------
+//
+// HELPER FUNCTIONS
+//
+//---------------------------------------------------------------------------------
+
+float calculateAngle(int x1, int y1, int x2, int y2) {
+  float deltaX = x2 - x1;
+  float deltaY = y2 - y1;
+  float angle = atan2(deltaY, deltaX) * (180.0 / M_PI);
+  return angle < 0 ? angle + 360 : angle;
+}
 
 //---------------------------------------------------------------------------------
 //
@@ -20,7 +35,7 @@ Camdyn Rasque
 //
 //---------------------------------------------------------------------------------
 
-Tank::Tank(int x, int y, TankColor color, int &spriteIdCount) {
+Tank::Tank(int x, int y, TankColor color) {
   // Update the position of both sprites
   this->setPosition(x, y);
   this->setOffset(8, 8);
@@ -28,21 +43,21 @@ Tank::Tank(int x, int y, TankColor color, int &spriteIdCount) {
   this->color = color;
 
   // Set the oam attributes for the tank body
-  this->body.id = spriteIdCount++;
+  this->body.id = Sprite::num_sprites++;
   this->body.palette_alpha = this->body.id;
   this->body.priority = 2;
   this->body.affine_index = this->body.id;
 
   // Update Sprite ID Count
   // Set the oam attributes for the tank turret
-  this->turret.id = spriteIdCount++;
+  this->turret.id = Sprite::num_sprites++;
   this->turret.palette_alpha = this->turret.id;
   this->turret.priority = 1;
   this->turret.affine_index = this->turret.id;
 
   // Initialize the tank body and turret graphics
-  initTankBodyGfx(this, (u8 *)sprite_sheetTiles);
-  initTankTurretGfx(this, (u8 *)sprite_sheetTiles);
+  this->body.initGfx(1, 1 + color);
+  this->turret.initGfx(1 + color, 3);
 
   // Set the initial animation frames
   this->updateAnimationFrames();
@@ -121,11 +136,9 @@ void Tank::interpolateBodyRotation() {
       fmod(fmod(body.rotation_angle, 360.0f) + 360.0f, 360.0f);
 }
 
-void Tank::move(TankDirection direction, int frameCounter,
-                std::vector<Tank> &tanks) {
+void Tank::move(TankDirection direction, Stage *stage) {
   this->direction = direction; // Save tank direction for linear interpolation
-  if (direction != body.rotation_angle)
-    return; // Don't move if not done rotating
+  if (direction != body.rotation_angle) return;
 
   bool hasMoved = false; // For checking
   int baseSpeed = 1;     // For use with slightly slowing down diagonal speed
@@ -153,7 +166,7 @@ void Tank::move(TankDirection direction, int frameCounter,
         newPosY.y += moveAmount;
       }
 
-      if (validateInput(newPosY, *this, tanks)) {
+      if (validateInput(newPosY, this, stage)) {
         setPosition('y', newPosY.y);
         hasMoved = true;
         accumulatedY =
@@ -175,12 +188,12 @@ void Tank::move(TankDirection direction, int frameCounter,
 
     if (moveAmount != 0) {
       if (hasPosX) {
-        newPosX.x -= moveAmount;
-      } else {
         newPosX.x += moveAmount;
+      } else {
+        newPosX.x -= moveAmount;
       }
 
-      if (validateInput(newPosX, *this, tanks)) {
+      if (validateInput(newPosX, this, stage)) {
         setPosition('x', newPosX.x);
         hasMoved = true;
         accumulatedX =
@@ -191,11 +204,20 @@ void Tank::move(TankDirection direction, int frameCounter,
     }
   }
 
-  if (hasMoved && frameCounter >= body.anim_speed) {
+  if (hasMoved && Stage::frame_counter >= body.anim_speed) {
     body.anim_frame = (body.anim_frame - 1 + 3) % 3;
     updateAnimationFrames();
-    frameCounter = 0;
+    Stage::frame_counter = 0;
   }
+}
+
+void Tank::rotateTurret(touchPosition &touch) {
+  Position tankPos = getPosition();
+  int tankCenterX = tankPos.x + body.tile_offset.x;
+  int tankCenterY = tankPos.y + body.tile_offset.y;
+  // Calculate the angle between the tank and the touch position
+  float angle = calculateAngle(tankCenterX, tankCenterY, touch.px, touch.py);
+  turret.rotation_angle = 270 - angle;
 }
 
 void Tank::updateOAM() {
@@ -220,7 +242,8 @@ void Tank::updateOAM() {
     body.tile_offset.y += 1;
     break;
   default:
-    setOffset(8, 8);
+    body.tile_offset.x = 8;
+    body.tile_offset.y = 8;
   }
 
   // Update the OAM
@@ -229,33 +252,4 @@ void Tank::updateOAM() {
 
   // Reset rotational adjustment
   setOffset(8, 8);
-}
-
-//---------------------------------------------------------------------------------
-//
-// INITIALIZATION FUNCTIONS
-//
-//---------------------------------------------------------------------------------
-
-void initTankBodyGfx(Tank *tank, u8 *gfx) {
-  // Allocate 32x32 sprite graphics memory
-  tank->body.gfx_mem =
-      oamAllocateGfx(&oamMain, SpriteSize_32x32, SpriteColorFormat_256Color);
-  // Set the body_frame_gfx pointer to the start of the sprite sheet
-  tank->body.gfx_frame =
-      gfx + ((tank->color * 3) * tank->body.tile_size * tank->body.tile_size);
-}
-
-void initTankTurretGfx(Tank *tank, u8 *gfx) {
-  // Allocate 32x32 sprite graphics memory
-  tank->turret.gfx_mem =
-      oamAllocateGfx(&oamMain, SpriteSize_32x32, SpriteColorFormat_256Color);
-  // Set the turret_frame_gfx pointer to the correct position in the sprite
-  // sheet Assuming each sprite is 32x32 pixels and gfx is a linear array Blue
-  // turret is in row 2, column 1 Red turret is in row 2, column 2
-  int row = 3;              // Row 2 (0-indexed)
-  int column = tank->color; // Column 1 for blue (0), Column 2 for red (1)
-  tank->turret.gfx_frame =
-      gfx + (row * tank->turret.tile_size * tank->turret.tile_size * 2) +
-      (column * tank->turret.tile_size * tank->turret.tile_size);
 }
