@@ -11,6 +11,7 @@ Camdyn Rasque
 //---------------------------------------------------------------------------------
 
 #include "Tank.h"
+#include "Bullet.h"
 #include "Input.h"
 #include "Sprite.h"
 #include "Stage.h"
@@ -124,27 +125,30 @@ Tank::Tank(int x, int y, TankColor color) : color(color) {
   this->setOffset(8, 8);
 
   // Set the oam attributes for the tank body
-  this->body.id = Sprite::num_sprites++;
-  this->body.palette_alpha = this->body.id;
-  this->body.priority = 2;
-  this->body.affine_index = this->body.id;
+  this->body->id = Sprite::num_sprites++;
+  this->body->palette_alpha = this->body->id;
+  this->body->affine_index = this->body->id;
+  this->body->priority = 2;
 
   // Update Sprite ID Count
   // Set the oam attributes for the tank turret
-  this->turret.id = Sprite::num_sprites++;
-  this->turret.palette_alpha = this->turret.id;
-  this->turret.priority = 1;
-  this->turret.affine_index = this->turret.id;
+  this->turret->id = Sprite::num_sprites++;
+  this->turret->palette_alpha = this->turret->id;
+  this->turret->affine_index = this->turret->id;
+  this->turret->priority = 1;
 
-  // Initialize the tank body and turret graphics
-  this->body.sprite_sheet_pos = {0, 0 + color};
-  this->turret.sprite_sheet_pos = {3, 0 + color};
-  this->body.initGfx();
-  this->turret.initGfx();
+  // Initialize the tank body->and turret graphics
+  this->body->sprite_sheet_pos = {0, 0 + color};
+  this->turret->sprite_sheet_pos = {3, 0 + color};
+  this->body->initGfx();
+  this->turret->initGfx();
 
-  // Set the initial animation frames
-  this->body.copyGfxFrameToVRAM();
-  this->turret.copyGfxFrameToVRAM();
+  // Display the initial graphics frames on screen
+  this->body->copyGfxFrameToVRAM();
+  this->turret->copyGfxFrameToVRAM();
+
+  // Create and initialize the bullet sprites for this tank
+  createBullets();
 }
 
 Tank::~Tank() {
@@ -159,40 +163,40 @@ Tank::~Tank() {
 
 void Tank::setPosition(char axis, int value) {
   if (axis == 'x') {
-    body.pos.x = value;
-    turret.pos.x = value;
+    body->pos.x = value;
+    turret->pos.x = value;
   } else if (axis == 'y') {
-    body.pos.y = value;
-    turret.pos.y = value;
+    body->pos.y = value;
+    turret->pos.y = value;
   }
 }
 
 void Tank::setPosition(int x, int y) {
-  body.pos = {x, y};
-  turret.pos = {x, y};
+  body->pos = {x, y};
+  turret->pos = {x, y};
 }
 
 int Tank::getPosition(char axis) {
   if (axis == 'x') {
-    return body.pos.x;
+    return body->pos.x;
   } else if (axis == 'y') {
-    return body.pos.y;
+    return body->pos.y;
   }
   return -1;
 }
 
 void Tank::setOffset(int x, int y) {
-  body.tile_offset = {x, y};
-  turret.tile_offset = {x, y};
+  body->tile_offset = {x, y};
+  turret->tile_offset = {x, y};
 }
 
-Position &Tank::getPosition() { return body.pos; }
+Position &Tank::getPosition() { return body->pos; }
 
 void Tank::interpolateBodyRotation() {
   // Normalize both angles to [0, 360) range first
   float target_angle = fmod(fmod(direction, 360.0f) + 360.0f, 360.0f);
   float current_angle =
-      fmod(fmod(body.rotation_angle, 360.0f) + 360.0f, 360.0f);
+      fmod(fmod(body->rotation_angle, 360.0f) + 360.0f, 360.0f);
 
   // Compute the shortest rotation direction
   float angle_diff = target_angle - current_angle;
@@ -207,22 +211,22 @@ void Tank::interpolateBodyRotation() {
   // Rotate in the shortest direction with smooth interpolation
   if (fabs(angle_diff) > 0.1f) { // Small threshold to prevent jittering
     if (angle_diff > 0) {
-      body.rotation_angle += body_rotation_speed;
+      body->rotation_angle += body_rotation_speed;
     } else {
-      body.rotation_angle -= body_rotation_speed;
+      body->rotation_angle -= body_rotation_speed;
     }
   } else {
-    body.rotation_angle = target_angle; // Snap to exact angle when very close
+    body->rotation_angle = target_angle; // Snap to exact angle when very close
   }
 
   // Keep the angle in [0, 360) range
-  body.rotation_angle =
-      fmod(fmod(body.rotation_angle, 360.0f) + 360.0f, 360.0f);
+  body->rotation_angle =
+      fmod(fmod(body->rotation_angle, 360.0f) + 360.0f, 360.0f);
 }
 
 void Tank::move(TankDirection direction, Stage *stage) {
   this->direction = direction; // Save tank direction for linear interpolation
-  if (direction != body.rotation_angle) return;
+  if (direction != body->rotation_angle) return;
 
   bool hasMoved = false; // For checking
   int baseSpeed = 1;     // For use with slightly slowing down diagonal speed
@@ -292,20 +296,19 @@ void Tank::move(TankDirection direction, Stage *stage) {
     }
   }
 
-  if (hasMoved && Stage::frame_counter >= body.anim_speed) {
-    body.incrementAnimationFrame(true);
-    body.copyGfxFrameToVRAM();
-    Stage::frame_counter = 0;
+  if (hasMoved && Stage::frame_counter % body->anim_speed == 0) {
+    body->incrementAnimationFrame(true);
+    body->copyGfxFrameToVRAM();
   }
 }
 
 void Tank::rotateTurret(touchPosition &touch) {
   Position tankPos = getPosition();
-  int tankCenterX = tankPos.x + body.tile_offset.x;
-  int tankCenterY = tankPos.y + body.tile_offset.y;
+  int tankCenterX = tankPos.x + body->tile_offset.x;
+  int tankCenterY = tankPos.y + body->tile_offset.y;
   // Calculate the angle between the tank and the touch position
   float angle = calculateAngle(tankCenterX, tankCenterY, touch.px, touch.py);
-  turret.rotation_angle = 270 - angle;
+  turret->rotation_angle = 270 - angle;
 }
 
 void Tank::updateOAM() {
@@ -314,30 +317,58 @@ void Tank::updateOAM() {
   // Adjust for rotational miscalculations
   switch (direction) {
   case T_DIR_SE: // Tank_Southeast
-    body.tile_offset.x += 1;
+    body->tile_offset.x += 1;
     break;
   case T_DIR_S: // Tank_South
-    body.tile_offset.x += 1;
+    body->tile_offset.x += 1;
     break;
   case T_DIR_SW: // Tank_Southwest
-    body.tile_offset.x += 1;
-    body.tile_offset.y += 1;
+    body->tile_offset.x += 1;
+    body->tile_offset.y += 1;
     break;
   case T_DIR_W: // Tank_West
-    body.tile_offset.y += 1;
+    body->tile_offset.y += 1;
     break;
   case T_DIR_NW: // Tank_Northwest
-    body.tile_offset.y += 1;
+    body->tile_offset.y += 1;
     break;
   default:
-    body.tile_offset.x = 8;
-    body.tile_offset.y = 8;
+    body->tile_offset.x = 8;
+    body->tile_offset.y = 8;
   }
 
   // Update the OAM
-  body.updateOAM();
-  turret.updateOAM();
+  body->updateOAM();
+  turret->updateOAM();
 
   // Reset rotational adjustment
   setOffset(8, 8);
+}
+
+void Tank::createBullets() {
+  // Initialize all bullet pointers
+  for (int i = 0; i < max_bullets; i++) {
+    // Create new Bullet with this tank as owner
+    bullets[i] = new Bullet(bullet_speed, max_bullet_ricochets);
+    // Hide bullet initially
+    bullets[i]->hide = true;
+    // Set the oam attributes for the tank body
+    bullets[i]->id = Sprite::num_sprites++;
+    bullets[i]->palette_alpha = bullets[i]->id;
+    bullets[i]->affine_index = bullets[i]->id;
+    bullets[i]->priority = 2;
+  }
+}
+
+void Tank::fire() {
+  // Return if no bullets left
+  if (active_bullets >= max_bullets) return;
+  // Fire the next available bullet
+  bullets[active_bullets++]->fire(getPosition(), turret->rotation_angle);
+}
+
+void Tank::updateBulletPositions() {
+  for (int i = 0; i < active_bullets; i++) {
+    bullets[i]->updatePosition();
+  }
 }

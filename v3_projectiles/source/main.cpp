@@ -56,15 +56,20 @@ void initGraphics() {
 
 /**
  * @brief Updates sprite attributes for all tanks.
- * @param cursor the player's cursor sprite
  * @param stage the stage to update the sprites of
+ * @param cursor the player's cursor sprite
  */
-void updateSprites(Cursor *cursor, Stage *stage) {
+void updateSprites(Stage *stage, Cursor *cursor) {
   // Update the cursor first and foremost
   cursor->updateOAM();
   // Update all the tank sprite positions
   for (int i = 0; i < stage->num_tanks; i++) {
     stage->tanks[i]->updateOAM();
+    // Update positions of any active bullet sprites for each tank
+    for (int j = 0; j < stage->tanks[i]->active_bullets; j++) {
+      stage->tanks[i]->bullets[j]->updatePosition();
+      stage->tanks[i]->bullets[j]->updateOAM();
+    }
   }
 }
 
@@ -80,19 +85,20 @@ int main(void) {
   // Initialize the graphics (set video mode, set VRAM banks, etc)
   initGraphics();
 
+  // Create a player cursor
+  Cursor *cursor = new Cursor();
+
   // Initialize the first stage
   Stage *stage = new Stage(1);
   stage->initBackground();
 
-  // Create a player cursor
-  Cursor *cursor = new Cursor();
-
   while (pmMainLoop()) {
-    handleDirectionInput(stage->tanks[0], stage);
-    handleTouchInput(stage->tanks[0], cursor);
-
-    updateSprites(cursor, stage);
-
+    // Handle all inputs
+    handleButtonInput(stage);
+    handleTouchInput(stage, cursor);
+    // Update sprites in the Object Attribute Model
+    updateSprites(stage, cursor);
+    // Increment the frame counter
     Stage::frame_counter++;
 
     glFlush(0); // Make sure frame has finished rendering

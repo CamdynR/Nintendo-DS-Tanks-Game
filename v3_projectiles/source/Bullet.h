@@ -5,25 +5,37 @@
 
 enum BulletSpeed { B_SPEED_NORMAL = 1, B_SPEED_FAST = 2 };
 
+struct Velocity {
+  float x;
+  float y;
+};
 struct Bullet : Sprite {
-  BulletSpeed speed = B_SPEED_NORMAL;
+  BulletSpeed speed;
+  Position position;     // Set upon fire and constantly updated until hit
+  Velocity velocity;     // Stores x,y velocity components
   float direction;       // Should awlays match rotation_angle, but included for
                          // readability
   int max_ricochets;     // The max number of ricochets the bullet can do
   int num_ricochets = 0; // The current number of ricochets the bullet has
+  int anim_speed = 3;
 
-  Position sprite_sheet_pos = {12, 1};
+  bool in_flight = false; // True if has been fired but hasn't been destroyed
 
   /**
    * @brief Bullet constructor, initialize variables
    */
-  Bullet(float direction, int max_ricochets);
+  Bullet(BulletSpeed speed, int max_ricochets);
 
-  /*
-   * @brief Updates the selected animation frame of the tank
-   *        sprites based on its state.
+  /**
+   * @brief Fire the bullet in a given direction
+   * @param direction the angle to fire the bullet in
    */
-  // void updateAnimationFrames();
+  void fire(Position position, float direction);
+
+  /**
+   * @brief If in flight, updates it's position accordingly
+   */
+  void updatePosition();
 };
 
 #endif // BULLET_H

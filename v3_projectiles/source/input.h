@@ -56,16 +56,15 @@ bool validateInput(Position &pos, Tank *tank, Stage *stage);
 
 /**
  * @brief Handles user input to update the tank's position.
- * @param tank The tank object to update.
  * @param stage The stage to handle direction input on
  */
-void handleDirectionInput(Tank *tank, Stage *stage);
+void handleButtonInput(Stage *stage);
 
 /**
  * @brief Handles touch input to update the tank's turret angle.
- * @param playerTank The tank object to update.
+ * @param Stage The stage with the current tanks to update.
  * @param cursor The player's cursor sprite.
  */
-void handleTouchInput(Tank *playerTank, Cursor *cursor);
+void handleTouchInput(Stage *stage, Cursor *cursor);
 
 #endif // INPUT_H

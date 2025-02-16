@@ -11,6 +11,9 @@ Camdyn Rasque
 //---------------------------------------------------------------------------------
 
 #include "input.h"
+#include "calico/gba/keypad.h"
+
+#include <stdio.h>
 
 //---------------------------------------------------------------------------------
 //
@@ -78,52 +81,62 @@ bool validateInput(Position &pos, Tank *tank, Stage *stage) {
 //
 //---------------------------------------------------------------------------------
 
-/**
- * @brief Handles user input to update the tank's position.
- * @param tank The tank object to update.
- * @param stage The stage to handle direction input on
- */
-void handleDirectionInput(Tank *tank, Stage *stage) {
+void handleButtonInput(Stage *stage) {
   // Scan for keys
   scanKeys();
-  int keys = keysHeld();
+  int keys_held = keysHeld();
+  int keys_down = keysDown();
+
+  /*******************/
+  /* Direction Input */
+  /*******************/
+
+  // Grab a reference to the player tank
+  Tank *playerTank = stage->tanks[0];
 
   // Set initial direction based on combined key presses
-  TankDirection direction = tank->direction;
-  if (keys & KEY_LEFT) {
-    if (keys & KEY_UP) {
+  TankDirection direction = playerTank->direction;
+  if (keys_held & KEY_LEFT) {
+    if (keys_held & KEY_UP) {
       direction = T_DIR_NW;
-    } else if (keys & KEY_DOWN) {
+    } else if (keys_held & KEY_DOWN) {
       direction = T_DIR_SW;
     } else {
       direction = T_DIR_W;
     }
-  } else if (keys & KEY_RIGHT) {
-    if (keys & KEY_UP) {
+  } else if (keys_held & KEY_RIGHT) {
+    if (keys_held & KEY_UP) {
       direction = T_DIR_NE;
-    } else if (keys & KEY_DOWN) {
+    } else if (keys_held & KEY_DOWN) {
       direction = T_DIR_SE;
     } else {
       direction = T_DIR_E;
     }
-  } else if (keys & KEY_UP) {
+  } else if (keys_held & KEY_UP) {
     direction = T_DIR_N;
-  } else if (keys & KEY_DOWN) {
+  } else if (keys_held & KEY_DOWN) {
     direction = T_DIR_S;
   }
 
   // If any direction was pressed
-  if (keys & KEY_UP || keys & KEY_RIGHT || keys & KEY_DOWN || keys & KEY_LEFT) {
-    tank->move(direction, stage);
+  if (keys_held & KEY_UP || keys_held & KEY_RIGHT || keys_held & KEY_DOWN ||
+      keys_held & KEY_LEFT) {
+    playerTank->move(direction, stage);
   }
+
+  /***********************/
+  /* Non-Direction Input */
+  /***********************/
+
+  // Fire Bullet
+  if (keys_down & KEY_L) {
+    playerTank->fire();
+  }
+
+  // Lay Mine
 }
 
-/**
- * @brief Handles touch input to update the tank's turret angle.
- * @param playerTank The tank object to update.
- * @param cursor The player's cursor sprite.
- */
-void handleTouchInput(Tank *playerTank, Cursor *cursor) {
+void handleTouchInput(Stage *stage, Cursor *cursor) {
   // Scan for keys
   scanKeys();
   int keys = keysHeld();
@@ -134,8 +147,8 @@ void handleTouchInput(Tank *playerTank, Cursor *cursor) {
   if (keys & KEY_TOUCH) {
     cursor->hide = false;                    // Show the cursor
     cursor->setPosition(touch.px, touch.py); // Update the cursor position
-    cursor->connectToTank(playerTank);       // Draw the dotted line
-    playerTank->rotateTurret(touch);         // Rotate the tank turret
+    cursor->connectToTank(stage->tanks[0]);  // Draw the dotted line
+    stage->tanks[0]->rotateTurret(touch);    // Rotate the tank turret
   } else {
     cursor->hide = true;
   }

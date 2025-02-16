@@ -18,17 +18,17 @@ struct Cursor : Sprite {
   int height = 14;
   int width = 14;
 
-  /*
+  /**
    * @brief Initializes the cursor sprite.
    */
   Cursor();
 
-  /*
+  /**
    * Set the position of where to be on screen
    */
   void setPosition(int x, int y);
 
-  /*
+  /**
    * Draws the dotted line between the cursor and the tank
    */
   void connectToTank(Tank *playerTank);

@@ -84,8 +84,8 @@ enum TankBehavior {
 struct Stage; // Avoids circular dependencies
 struct Tank {
   // Tank Component Sprites
-  Sprite body;
-  Sprite turret;
+  Sprite *body = new Sprite();
+  Sprite *turret = new Sprite();
 
   // Tank Attributes
   TankDirection direction; // Start facing north
@@ -107,66 +107,81 @@ struct Tank {
   int max_bullet_ricochets;
   int active_bullets = 0;
 
-  /*
+  /**
    * Struct constructor
    */
   Tank(int x, int y, TankColor color);
 
-  /*
+  /**
    * Struct deconstructor
    */
   ~Tank();
 
-  /*
+  /**
    * @brief Sets the position of one of the axes for the tank
    * @param axis The axis to set (x or y)
    * @param value The value to set the axis to
    */
   void setPosition(char axis, int value);
 
-  /*
+  /**
    * @brief Sets the position of both axes for the tank
    * @param x The x-coordinate
    * @param y The y-coordinate
    */
   void setPosition(int x, int y);
 
-  /*
+  /**
    * @brief Gets the position of one of the axes for the tank
    * @param axis The axis to get (x or y)
    */
   int getPosition(char axis);
 
-  /*
+  /**
    * @brief Gets the position of both of the axes for the tank
    */
   Position &getPosition();
 
-  /*
+  /**
    * @brief Sets the offset of both of the axes for the tank
    */
   void setOffset(int x, int y);
 
-  /*
-   * @brief Uses LERP to smoothly rotate the tank body in between
+  /**
+   * @brief Uses LERP to smoothly rotate the tank body->in between
    *        directions
    */
   void interpolateBodyRotation();
 
-  /*
+  /**
    * Moves the tank in the specified direction.
    */
   void move(TankDirection direction, Stage *stage);
 
-  /*
+  /**
    * Rotates the tank's turret to the touch position
    */
   void rotateTurret(touchPosition &touch);
 
-  /*
-   * @brief Updates the OAM for both the tank body and tank turret
+  /**
+   * @brief Updates the OAM for both the tank body->and tank turret
    */
   void updateOAM();
+
+  /**
+   * @brief Creates the bullet sprites and stores them in the bullets arrays
+   */
+  void createBullets();
+
+  /**
+   * @brief If bullets are available, fires them in the direction pointed
+   */
+  void fire();
+
+  /**
+   * @brief Updates the positions for any in-flight bullets
+   */
+  void updateBulletPositions();
 };
 
 //---------------------------------------------------------------------------------
@@ -176,14 +191,14 @@ struct Tank {
 //---------------------------------------------------------------------------------
 
 /**
- * @brief Allocates and initializes sprite graphics for the tank body.
+ * @brief Allocates and initializes sprite graphics for the tank body->
  * @param tank The tank object.
  * @param gfx The graphics data.
  */
 void initTankBodyGfx(Tank *tank, u8 *gfx);
 
 /**
- * @brief Allocates and initializes sprite graphics for the tank turret.
+ * @brief Allocates and initializes sprite graphics for the tank turret->
  * @param tank The tank object.
  * @param gfx The graphics data.
  */

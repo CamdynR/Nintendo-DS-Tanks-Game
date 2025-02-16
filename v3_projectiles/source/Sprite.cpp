@@ -29,8 +29,9 @@ void Sprite::initGfx() {
   int sprite_index =
       sprite_sheet_pos.y * Sprite::SPRITE_SHEET_COLS + sprite_sheet_pos.x;
   gfx_frame = (u8 *)sprite_sheetTiles + (sprite_index * tile_size * tile_size);
+}
 
-  // Copy the frame graphics into memory
+void Sprite::copyGfxFrameToVRAM() {
   dmaCopy(gfx_frame, gfx_mem, tile_size * tile_size);
 }
 
@@ -44,10 +45,6 @@ void Sprite::incrementAnimationFrame(bool backwards) {
   int sprite_index = ((sprite_sheet_pos.y) * Sprite::SPRITE_SHEET_COLS +
                       (sprite_sheet_pos.x + anim_frame));
   gfx_frame = (u8 *)sprite_sheetTiles + (sprite_index * tile_size * tile_size);
-}
-
-void Sprite::copyGfxFrameToVRAM() {
-  dmaCopy(gfx_frame, gfx_mem, tile_size * tile_size);
 }
 
 void Sprite::updateOAM() {
