@@ -194,9 +194,8 @@ Position &Tank::getPosition() { return body->pos; }
 
 void Tank::interpolateBodyRotation() {
   // Normalize both angles to [0, 360) range first
-  float target_angle = fmod(fmod(direction, 360.0f) + 360.0f, 360.0f);
-  float current_angle =
-      fmod(fmod(body->rotation_angle, 360.0f) + 360.0f, 360.0f);
+  float target_angle = direction;
+  float current_angle = body->rotation_angle;
 
   // Compute the shortest rotation direction
   float angle_diff = target_angle - current_angle;
@@ -308,7 +307,8 @@ void Tank::rotateTurret(touchPosition &touch) {
   int tankCenterY = tankPos.y + body->tile_offset.y;
   // Calculate the angle between the tank and the touch position
   float angle = calculateAngle(tankCenterX, tankCenterY, touch.px, touch.py);
-  turret->rotation_angle = 270 - angle;
+  turret->rotation_angle = fmod(270 - angle, 360.0f);
+  if (turret->rotation_angle < 0) turret->rotation_angle += 360.0f;
 }
 
 void Tank::updateOAM() {

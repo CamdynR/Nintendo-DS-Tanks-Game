@@ -9,7 +9,11 @@ struct Velocity {
   float x;
   float y;
 };
-struct Bullet : Sprite {
+class Bullet : public Sprite {
+private:
+  Velocity sub_pixel;
+
+public:
   BulletSpeed speed;
   Position position;     // Set upon fire and constantly updated until hit
   Velocity velocity;     // Stores x,y velocity components
