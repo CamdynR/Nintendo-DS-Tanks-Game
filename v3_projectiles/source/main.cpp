@@ -51,7 +51,7 @@ void initGL2D() {
  * @brief Initializes the graphics system for 2D sprites.
  */
 void initGraphics() {
-  videoSetMode(MODE_0_3D);
+  videoSetMode(MODE_5_3D);
   initSprites();
   initGL2D();
 }
@@ -119,7 +119,6 @@ int main(void) {
         stage->tanks[i]->bullets[j]->draw();
       }
     }
-
     glEnd2D();
 
     // Increment the frame counter

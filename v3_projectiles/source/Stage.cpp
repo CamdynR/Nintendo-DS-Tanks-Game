@@ -37,14 +37,11 @@ void Stage::initBackground() {
   // Set VRAM bank A for the background
   vramSetBankA(VRAM_A_MAIN_BG);
   // Initialize the tile background to last layer
-  int bg = bgInit(3, BgType_Text8bpp, BgSize_T_256x256, 31, 0);
-  // Set to lowest priority so everything is on top of it
+  int bg = bgInit(3, BgType_Bmp16, BgSize_B16_256x256, 0, 0);
   bgSetPriority(bg, 3);
 
   if (stage_num == 1) {
     // Copy stage 1 tiles to the background layer
-    dmaCopy(stage_1_bgTiles, bgGetGfxPtr(bg), stage_1_bgTilesLen);
-    dmaCopy(stage_1_bgMap, bgGetMapPtr(bg), stage_1_bgMapLen);
-    dmaCopy(stage_1_bgPal, BG_PALETTE, stage_1_bgPalLen);
+    decompress(stage_1_bgBitmap, BG_GFX, LZ77Vram);
   }
 }
