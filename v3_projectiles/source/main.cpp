@@ -40,11 +40,16 @@ void initSprites() {
  * @brief Initializes the graphics system for 2D bitmap drawing
  */
 void initGL2D() {
+  // Set up texture VRAM banks (using D for textures, E for palettes)
+  vramSetBankD(VRAM_D_TEXTURE);
+  vramSetBankE(VRAM_E_TEX_PALETTE);
   // Enable gl2d
   glScreen2D();
   // Prevent GL2D from drawing a black frame
   glClearColor(31, 31, 31, 0);
   glClearPolyID(63);
+  // Set up texture parameters
+  glPolyFmt(POLY_ALPHA(31) | POLY_CULL_NONE);
 }
 
 /**
@@ -100,6 +105,9 @@ int main(void) {
   Stage *stage = new Stage(1);
   stage->initBackground();
 
+  Bullet *testBullet = new Bullet(B_SPEED_NORMAL, 1);
+  testBullet->fire({100, 100}, 0);
+
   while (pmMainLoop()) {
     // Handle all inputs
     handleButtonInput(stage);
@@ -114,11 +122,14 @@ int main(void) {
       cursor->connectToTank(stage->tanks[0]); // Draw the dotted line
     }
     // Draw bullets using GL2D
-    for (int i = 0; i < stage->num_tanks; i++) {
-      for (int j = 0; j < stage->tanks[i]->active_bullets; j++) {
-        stage->tanks[i]->bullets[j]->draw();
-      }
-    }
+    // for (int i = 0; i < stage->num_tanks; i++) {
+    //   for (int j = 0; j < stage->tanks[i]->active_bullets; j++) {
+    //     stage->tanks[i]->bullets[j]->draw();
+    //   }
+    // }
+
+    testBullet->draw();
+
     glEnd2D();
 
     // Increment the frame counter

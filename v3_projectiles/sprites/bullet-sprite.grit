@@ -1,8 +1,8 @@
 #Bitmap mode
 -gb
 
-# Set the bit depth to 2 (4 colors)
--gB2
+# Set the bit depth to 4
+-gB4
 
 #include pal
 -p

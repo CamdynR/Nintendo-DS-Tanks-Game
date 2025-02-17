@@ -11,6 +11,7 @@ Camdyn Rasque
 //---------------------------------------------------------------------------------
 
 #include "Bullet.h"
+#include "bullet-sprite.h"
 #include "math.h"
 
 //-------------------------------------------------------------------------------
@@ -20,35 +21,17 @@ Camdyn Rasque
 //-------------------------------------------------------------------------------
 
 Bullet::Bullet(BulletSpeed speed, int max_ricochets)
-    : BitmapSprite(), // Call parent constructor
-      speed(speed), max_ricochets(max_ricochets) {
+    : BitmapSprite(), speed(speed), max_ricochets(max_ricochets) {
 
-  // Set the colors for the bullet sprite
-  static ColorsArray bulletColors = {
-      RGB15(12, 12, 12), // Dark gray
-      RGB15(17, 17, 17), // gray
-      RGB15(20, 20, 20), // Light Gray
-      -1,                // Unused (since MAX_COLORS is 4)
-  };
-
-  static int bulletImage[MAX_SIZE][MAX_SIZE] = {
-      {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-      {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-      {-1, -1, -1, 0, 0, 0, 0, -1, -1, -1},
-      {-1, -1, 0, 0, 0, 0, 0, 0, -1, -1},
-      {-1, -1, 0, 0, 0, 0, 0, 0, -1, -1},
-      {-1, -1, 0, 0, 0, 0, 0, 0, -1, -1},
-      {-1, -1, 0, 0, 0, 0, 0, 0, -1, -1},
-      {-1, -1, -1, 0, 0, 0, 0, -1, -1, -1},
-      {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-      {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1}};
-
-  setColors(&bulletColors, 3);
-  setImgPixels(bulletImage);
+  // Set the bitmap data from bullet sprite
+  setPaletteData(bullet_spritePal);
+  setBitmapData(bullet_spriteBitmap, 8,
+                8); // 8x8 is the size defined in bullet-sprite.h
 }
 
 void Bullet::fire(Position position, float direction) {
   this->in_flight = true;
+  this->visible = true;
   this->pos = position;
   this->rotation_angle = direction;
 
