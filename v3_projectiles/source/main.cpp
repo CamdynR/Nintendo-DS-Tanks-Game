@@ -10,6 +10,7 @@ Camdyn Rasque
 //
 //---------------------------------------------------------------------------------
 
+#include "Bullet.h"
 #include "Cursor.h"
 #include "Stage.h"
 #include "Tank.h"
@@ -36,16 +37,23 @@ void initSprites() {
 }
 
 /**
+ * @brief Initializes the graphics system for 2D bitmap drawing
+ */
+void initGL2D() {
+  // Enable gl2d
+  glScreen2D();
+  // Prevent GL2D from drawing a black frame
+  glClearColor(31, 31, 31, 0);
+  glClearPolyID(63);
+}
+
+/**
  * @brief Initializes the graphics system for 2D sprites.
  */
 void initGraphics() {
   videoSetMode(MODE_0_3D);
-  glScreen2D();
   initSprites();
-
-  // Prevent GL2D from drawing a black frame
-  glClearColor(31, 31, 31, 0);
-  glClearPolyID(63);
+  initGL2D();
 }
 
 //---------------------------------------------------------------------------------
@@ -68,7 +76,7 @@ void updateSprites(Stage *stage, Cursor *cursor) {
     // Update positions of any active bullet sprites for each tank
     for (int j = 0; j < stage->tanks[i]->active_bullets; j++) {
       stage->tanks[i]->bullets[j]->updatePosition();
-      stage->tanks[i]->bullets[j]->updateOAM();
+      // stage->tanks[i]->bullets[j]->updateOAM();
     }
   }
 }
@@ -106,11 +114,12 @@ int main(void) {
       cursor->connectToTank(stage->tanks[0]); // Draw the dotted line
     }
     // Draw bullets using GL2D
-    // for (int i = 0; i < stage->num_tanks; i++) {
-    //   for (int j = 0; j < stage->tanks[i]->active_bullets; j++) {
-    //     stage->tanks[i]->bullets[j]->draw();
-    //   }
-    // }
+    for (int i = 0; i < stage->num_tanks; i++) {
+      for (int j = 0; j < stage->tanks[i]->active_bullets; j++) {
+        stage->tanks[i]->bullets[j]->draw();
+      }
+    }
+
     glEnd2D();
 
     // Increment the frame counter

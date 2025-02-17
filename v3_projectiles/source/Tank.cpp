@@ -350,13 +350,13 @@ void Tank::createBullets() {
   for (int i = 0; i < max_bullets; i++) {
     // Create new Bullet with this tank as owner
     bullets[i] = new Bullet(bullet_speed, max_bullet_ricochets);
-    // Hide bullet initially
-    bullets[i]->hide = true;
-    // Set the oam attributes for the tank body
-    bullets[i]->id = Sprite::num_sprites++;
-    bullets[i]->palette_alpha = bullets[i]->id;
-    bullets[i]->affine_index = bullets[i]->id;
-    bullets[i]->priority = 2;
+    // // Hide bullet initially
+    // bullets[i]->hide = true;
+    // // Set the oam attributes for the tank body
+    // bullets[i]->id = Sprite::num_sprites++;
+    // bullets[i]->palette_alpha = bullets[i]->id;
+    // bullets[i]->affine_index = bullets[i]->id;
+    // bullets[i]->priority = 2;
   }
 }
 

@@ -1,0 +1,11 @@
+#Bitmap mode
+-gb
+
+# Set the bit depth to 2 (4 colors)
+-gB2
+
+#include pal
+-p
+
+# Set transparent color to magenta
+-gTFF00FF
