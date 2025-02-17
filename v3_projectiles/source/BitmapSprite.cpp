@@ -76,8 +76,8 @@ void BitmapSprite::rotateImage() {
       float rot_y = -rel_x * sin_angle + rel_y * cos_angle;
 
       // Convert back to array coordinates
-      int new_x = round(rot_x + center);
-      int new_y = round(rot_y + center);
+      int new_x = floor(rot_x + center);
+      int new_y = floor(rot_y + center);
 
       // Only copy if within bounds
       if (new_x >= 0 && new_x < MAX_SIZE && new_y >= 0 && new_y < MAX_SIZE) {
@@ -93,7 +93,7 @@ void BitmapSprite::draw() {
   if (!visible) return;
 
   // Rotate the image if necessary
-  rotateImage();
+  // rotateImage();
   // Draw the final image on screen
   for (int y = 0; y < MAX_SIZE; y++) {
     for (int x = 0; x < MAX_SIZE; x++) {
