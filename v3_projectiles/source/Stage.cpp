@@ -34,27 +34,17 @@ Stage::Stage(int stageNum) {
 }
 
 void Stage::initBackground() {
-  // Set VRAM bank A to LCD mode so we can write a bitmap
-  // vramSetBankA(VRAM_A_MAIN_BG);
-  // int bg = bgInit(3, BgType_Bmp16, BgSize_B16_256x256, 0, 0);
-  // bgSetPriority(bg, 3);
-  // if (stage_num == 1) {
-  //   decompress(stage_1_bgBitmap, BG_GFX, LZ77Vram);
-  // }
+  // Set VRAM bank A for the background
   vramSetBankA(VRAM_A_MAIN_BG);
-  // Use BgType_Text8bpp instead of BgType_Bmp16
-  int bg = bgInit(3, BgType_Text8bpp, BgSize_T_256x256, 0, 0);
+  // Initialize the tile background to last layer
+  int bg = bgInit(3, BgType_Text8bpp, BgSize_T_256x256, 31, 0);
+  // Set to lowest priority so everything is on top of it
   bgSetPriority(bg, 3);
 
   if (stage_num == 1) {
-    // Clear any existing data first
-    dmaFillWords(0, BG_TILE_RAM(1), 32 * 1024);
-    dmaFillWords(0, BG_MAP_RAM(4), 2 * 1024);
-
-    // You'll need to convert your background to tiles
-    // and use dmaCopy instead of decompress
-    dmaCopy(stage_1_bgTiles, BG_TILE_RAM(0), stage_1_bgTilesLen);
-    dmaCopy(stage_1_bgMap, BG_MAP_RAM(0), stage_1_bgMapLen);
+    // Copy stage 1 tiles to the background layer
+    dmaCopy(stage_1_bgTiles, bgGetGfxPtr(bg), stage_1_bgTilesLen);
+    dmaCopy(stage_1_bgMap, bgGetMapPtr(bg), stage_1_bgMapLen);
     dmaCopy(stage_1_bgPal, BG_PALETTE, stage_1_bgPalLen);
   }
 }
