@@ -81,7 +81,6 @@ void updateSprites(Stage *stage, Cursor *cursor) {
     // Update positions of any active bullet sprites for each tank
     for (int j = 0; j < stage->tanks[i]->active_bullets; j++) {
       stage->tanks[i]->bullets[j]->updatePosition();
-      // stage->tanks[i]->bullets[j]->updateOAM();
     }
   }
 }
@@ -105,9 +104,6 @@ int main(void) {
   Stage *stage = new Stage(1);
   stage->initBackground();
 
-  Bullet *testBullet = new Bullet(B_SPEED_NORMAL, 1);
-  testBullet->fire({100, 100}, 0);
-
   while (pmMainLoop()) {
     // Handle all inputs
     handleButtonInput(stage);
@@ -122,13 +118,11 @@ int main(void) {
       cursor->connectToTank(stage->tanks[0]); // Draw the dotted line
     }
     // Draw bullets using GL2D
-    // for (int i = 0; i < stage->num_tanks; i++) {
-    //   for (int j = 0; j < stage->tanks[i]->active_bullets; j++) {
-    //     stage->tanks[i]->bullets[j]->draw();
-    //   }
-    // }
-
-    testBullet->draw();
+    for (int i = 0; i < stage->num_tanks; i++) {
+      for (int j = 0; j < stage->tanks[i]->active_bullets; j++) {
+        stage->tanks[i]->bullets[j]->draw();
+      }
+    }
 
     glEnd2D();
 

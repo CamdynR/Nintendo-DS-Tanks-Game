@@ -20,7 +20,7 @@ Camdyn Rasque
 
 Cursor::Cursor() {
   // Set sprite sheet position
-  this->sprite_sheet_pos = {3, 11};
+  this->sprite_sheet_pos = {0, 11};
   // Initialize graphics and copy to VRAM
   initGfx();
   copyGfxFrameToVRAM();
@@ -30,7 +30,7 @@ Cursor::Cursor() {
   this->palette_alpha = this->id;
   this->affine_index = this->id;
   // Hide until shown on screen
-  // this->hide = true;
+  this->hide = true;
   this->tile_offset = {16, 16};
 }
 

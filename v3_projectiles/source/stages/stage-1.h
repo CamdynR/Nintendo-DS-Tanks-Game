@@ -10,7 +10,7 @@ const int STAGE_1_HEIGHT = 192;
 
 const int STAGE_1_CELL_SIZE = 16;
 const int STAGE_1_NUM_TANKS = 2; // Includes user and enemies
-Tank **CREATE_STAGE_1_TANKS();
+Tank **CREATE_STAGE_1_TANKS(Stage *stage);
 
 const int STAGE_1_BARRIERS[SCREEN_HEIGHT][SCREEN_WIDTH] = {
     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,

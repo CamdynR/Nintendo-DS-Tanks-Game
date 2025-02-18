@@ -83,6 +83,35 @@ enum TankBehavior {
 
 class Stage; // Avoids circular dependencies
 class Tank {
+private:
+  Stage *stage;
+
+  /**
+   * @brief Checks if the given position is within the screen bounds.
+   * @param pos The position to check.
+   */
+  bool isWithinBounds(Position &pos);
+
+  /**
+   * @brief Checks if a tank at the given position would collide with any other
+   * tank.
+   * @param pos The position to check.
+   */
+  bool noTanksCollided(Position &pos);
+
+  /**
+   * @brief Checks if the tank's position collides with any barriers in the
+   * stage.
+   * @param pos The position to check.
+   */
+  bool noBarrierCollisions(Position &pos);
+
+  /**
+   * @brief Validates if a move is allowed based on screen bounds and
+   *        collisions.
+   */
+  bool validateMove(Position &pos);
+
 public:
   // Tank Component Sprites
   Sprite *body = new Sprite();
@@ -111,7 +140,7 @@ public:
   /**
    * Struct constructor
    */
-  Tank(int x, int y, TankColor color);
+  Tank(Stage *stage, int x, int y, TankColor color);
 
   /**
    * Struct deconstructor
@@ -157,7 +186,7 @@ public:
   /**
    * Moves the tank in the specified direction.
    */
-  void move(TankDirection direction, Stage *stage);
+  void move(TankDirection direction);
 
   /**
    * Rotates the tank's turret to the touch position
@@ -187,22 +216,18 @@ public:
 
 //---------------------------------------------------------------------------------
 //
-// FUNCTION DECLARATIONS
+// HELPER FUNCTION DECLARATIONS
 //
 //---------------------------------------------------------------------------------
 
 /**
- * @brief Allocates and initializes sprite graphics for the tank body->
- * @param tank The tank object.
- * @param gfx The graphics data.
+ * @brief Calculates the angle between two points.
+ * @param x1 The x-coordinate of the first point.
+ * @param y1 The y-coordinate of the first point.
+ * @param x2 The x-coordinate of the second point.
+ * @param y2 The y-coordinate of the second point.
+ * @return The angle in degrees.
  */
-void initTankBodyGfx(Tank *tank, u8 *gfx);
-
-/**
- * @brief Allocates and initializes sprite graphics for the tank turret->
- * @param tank The tank object.
- * @param gfx The graphics data.
- */
-void initTankTurretGfx(Tank *tank, u8 *gfx);
+float calculateAngle(int x1, int y1, int x2, int y2);
 
 #endif // TANK_H

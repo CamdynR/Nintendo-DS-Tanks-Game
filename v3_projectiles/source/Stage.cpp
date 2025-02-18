@@ -28,7 +28,7 @@ Stage::Stage(int stageNum) {
 
   if (stage_num == 1) {
     num_tanks = STAGE_1_NUM_TANKS;
-    tanks = CREATE_STAGE_1_TANKS();
+    tanks = CREATE_STAGE_1_TANKS(this);
     barriers = STAGE_1_BARRIERS;
   }
 }

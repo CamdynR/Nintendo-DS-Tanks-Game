@@ -12,7 +12,6 @@ Camdyn Rasque
 
 #include "Tank.h"
 #include "Bullet.h"
-#include "Input.h"
 #include "Sprite.h"
 #include "Stage.h"
 #include <math.h>
@@ -32,11 +31,72 @@ float calculateAngle(int x1, int y1, int x2, int y2) {
 
 //---------------------------------------------------------------------------------
 //
-// STRUCT FUNCTIONS
+// PRIVATE STRUCT FUNCTIONS
 //
 //---------------------------------------------------------------------------------
 
-Tank::Tank(int x, int y, TankColor color) : color(color) {
+bool Tank::isWithinBounds(Position &pos) {
+  bool tooFarUp = pos.y < 0;
+  bool tooFarLeft = pos.x < 0;
+  bool tooFarDown = pos.y + this->height - 1 >= SCREEN_HEIGHT;
+  bool tooFarRight = pos.x + this->width - 1 >= SCREEN_WIDTH;
+  return !tooFarUp && !tooFarLeft && !tooFarDown && !tooFarRight;
+}
+
+bool Tank::noTanksCollided(Position &pos) {
+  for (int i = 0; i < stage->num_tanks; i++) {
+    if (this == stage->tanks[i]) continue; // Skip checking against itself
+
+    // Grab the tank position
+    Position tankPos = stage->tanks[i]->getPosition();
+
+    // Check for overlap on the x and y axes
+    bool xOverlap = !(pos.x + width <= tankPos.x ||
+                      tankPos.x + stage->tanks[i]->width <= pos.x);
+    bool yOverlap = !(pos.y + height <= tankPos.y ||
+                      tankPos.y + stage->tanks[i]->height <= pos.y);
+
+    if (xOverlap && yOverlap) {
+      return false; // Collision detected
+    }
+  }
+  return true; // No collisions found
+}
+
+bool Tank::noBarrierCollisions(Position &pos) {
+  // Check each corner of the tank for collisions with barriers
+  int x1 = pos.x;
+  int y1 = pos.y;
+  int x2 = pos.x + width - 1;
+  int y2 = pos.y + height - 1;
+
+  // Ensure the tank is within the bounds of the stage
+  if (x1 < 0 || y1 < 0 || x2 >= SCREEN_WIDTH || y2 >= SCREEN_HEIGHT) {
+    return false; // Out of bounds, treat as a collision
+  }
+
+  // Check the four corners of the tank for barrier collisions
+  if (stage->barriers[y1][x1] == 1 || stage->barriers[y1][x2] == 1 ||
+      stage->barriers[y2][x1] == 1 || stage->barriers[y2][x2] == 1) {
+    return false; // Collision detected
+  }
+
+  return true; // No collisions with barriers
+}
+
+bool Tank::validateMove(Position &pos) {
+  return isWithinBounds(pos) && noTanksCollided(pos) &&
+         noBarrierCollisions(pos);
+}
+
+//---------------------------------------------------------------------------------
+//
+// PUBLIC STRUCT FUNCTIONS
+//
+//---------------------------------------------------------------------------------
+
+Tank::Tank(Stage *stage, int x, int y, TankColor color)
+    : stage(stage), color(color) {
   // Set tank attributes base on the tank color
   switch (color) {
   case T_COLOR_BROWN:
@@ -223,7 +283,7 @@ void Tank::interpolateBodyRotation() {
       fmod(fmod(body->rotation_angle, 360.0f) + 360.0f, 360.0f);
 }
 
-void Tank::move(TankDirection direction, Stage *stage) {
+void Tank::move(TankDirection direction) {
   this->direction = direction; // Save tank direction for linear interpolation
   if (direction != body->rotation_angle) return;
 
@@ -255,7 +315,7 @@ void Tank::move(TankDirection direction, Stage *stage) {
         newPosY.y += moveAmount;
       }
 
-      if (validateInput(newPosY, this, stage)) {
+      if (validateMove(newPosY)) {
         setPosition('y', newPosY.y);
         hasMoved = true;
         accumulatedY =
@@ -284,7 +344,7 @@ void Tank::move(TankDirection direction, Stage *stage) {
         newPosX.x -= moveAmount;
       }
 
-      if (validateInput(newPosX, this, stage)) {
+      if (validateMove(newPosX)) {
         setPosition('x', newPosX.x);
         hasMoved = true;
         accumulatedX =
@@ -349,14 +409,7 @@ void Tank::createBullets() {
   // Initialize all bullet pointers
   for (int i = 0; i < max_bullets; i++) {
     // Create new Bullet with this tank as owner
-    bullets[i] = new Bullet(bullet_speed, max_bullet_ricochets);
-    // // Hide bullet initially
-    // bullets[i]->hide = true;
-    // // Set the oam attributes for the tank body
-    // bullets[i]->id = Sprite::num_sprites++;
-    // bullets[i]->palette_alpha = bullets[i]->id;
-    // bullets[i]->affine_index = bullets[i]->id;
-    // bullets[i]->priority = 2;
+    bullets[i] = new Bullet(stage, bullet_speed, max_bullet_ricochets);
   }
 }
 
