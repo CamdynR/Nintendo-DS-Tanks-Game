@@ -203,9 +203,8 @@ Tank::Tank(Stage *stage, int x, int y, TankColor color)
   this->fire_blast->affine_index = -1;
   this->fire_blast->priority = 2;
   this->fire_blast->hide = true;
-  this->fire_blast->num_anim_frames = 3;
+  this->fire_blast->num_anim_frames = 1;
   this->fire_blast->anim_speed = 3;
-  this->fire_blast->tile_offset = {8, 20};
 
   // Initialize the tank body->and turret graphics
   this->body->sprite_sheet_pos = {0, 0 + color};
@@ -219,6 +218,12 @@ Tank::Tank(Stage *stage, int x, int y, TankColor color)
   this->body->copyGfxFrameToVRAM();
   this->turret->copyGfxFrameToVRAM();
   this->fire_blast->copyGfxFrameToVRAM();
+
+  // Store position of center of tank
+  center = {
+    body->pos.x + body->tile_offset.x,
+    body->pos.y + body->tile_offset.y
+  };
 
   // Create and initialize the bullet sprites for this tank
   createBullets();
@@ -250,10 +255,12 @@ void Tank::setPosition(char axis, int value) {
     body->pos.x = value;
     turret->pos.x = value;
     fire_blast->pos.x = value;
+    center.x = value + body->tile_offset.x;
   } else if (axis == 'y') {
     body->pos.y = value;
     turret->pos.y = value;
     fire_blast->pos.y = value;
+    center.y = value + body->tile_offset.y;
   }
 }
 
@@ -261,6 +268,12 @@ void Tank::setPosition(int x, int y) {
   body->pos = {x, y};
   turret->pos = {x, y};
   fire_blast->pos = {x, y};
+
+  // Update position of center of tank
+  center = {
+    x + body->tile_offset.x,
+    y + body->tile_offset.y
+  };
 }
 
 int Tank::getPosition(char axis) {
@@ -275,6 +288,13 @@ int Tank::getPosition(char axis) {
 void Tank::setOffset(int x, int y) {
   body->tile_offset = {x, y};
   turret->tile_offset = {x, y};
+
+  // center -> x,y-2
+  // radius -> 13
+  fire_blast->tile_offset = {
+    x + 13 * sin(turret->rotation_angle),
+    y + 13 * cos(turret->rotation_angle)
+  };
 }
 
 Position &Tank::getPosition() { return body->pos; }
@@ -389,13 +409,13 @@ void Tank::move(TankDirection direction) {
 }
 
 void Tank::rotateTurret(touchPosition &touch) {
-  Position tankPos = getPosition();
-  int tankCenterX = tankPos.x + body->tile_offset.x;
-  int tankCenterY = tankPos.y + body->tile_offset.y;
   // Calculate the angle between the tank and the touch position
-  float angle = calculateAngle(tankCenterX, tankCenterY, touch.px, touch.py);
+  float angle = calculateAngle(center.x, center.y, touch.px, touch.py);
   turret->rotation_angle = fmod(270 - angle, 360.0f);
   if (turret->rotation_angle < 0) turret->rotation_angle += 360.0f;
+
+  // fire_blast->tile_offset.x = tankCenterX;
+  // fire_blast->tile_offset.y = tankCenterY;
 }
 
 void Tank::updateOAM() {
@@ -426,7 +446,7 @@ void Tank::updateOAM() {
 
   // Animate the fireblast if it is active
   if (!fire_blast->hide) {
-    fire_blast->incrementAnimationFrame(false, false);
+    fire_blast->incrementAnimationFrame(false, true);
     fire_blast->copyGfxFrameToVRAM();
   }
 

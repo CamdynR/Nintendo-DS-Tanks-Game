@@ -129,6 +129,7 @@ public:
   int body_rotation_speed = 5;
   int height = TANK_SIZE; // Visual height of the tank in px within the Tile
   int width = TANK_SIZE;  // Visual height of the tank in px within the Tile
+  Position center;                         // Center of the tank
 
   // Bullet related attributes
   BulletSpeed bullet_speed;                  // Speed of the bullets
