@@ -40,6 +40,8 @@ public:
   bool vflip = false;
   bool mosaic = false;
 
+  virtual ~Sprite();
+
   /**
    * @brief Allocated memory for the graphics in VRAM and points to the current
    * frame
@@ -50,7 +52,7 @@ public:
    * @brief Updates the gfx_frame reference with the new animation frame
    *        of the sprite based on its state.
    */
-  void incrementAnimationFrame(bool backwards = false);
+  void incrementAnimationFrame(bool backwards = false, bool loop = true);
 
   /**
    * @brief Needs to be called once per frame, updates VRAM with

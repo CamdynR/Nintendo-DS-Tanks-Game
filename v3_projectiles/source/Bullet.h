@@ -4,7 +4,7 @@
 #include "BitmapSprite.h"
 #include "Stage.h"
 
-enum BulletSpeed { B_SPEED_NORMAL = 1, B_SPEED_FAST = 2 };
+enum BulletSpeed { B_SPEED_NORMAL = 2, B_SPEED_FAST = 3 };
 enum BulletRicochetDir {
   B_NO_RICOCHET = -1,
   B_RIC_DIR_N = 0,
@@ -21,10 +21,10 @@ struct Velocity {
 class Bullet : public BitmapSprite {
 private:
   Stage *stage; // Stage bullet is attached to
+  Tank *tank;   // The tank in the stage the bullet is attached to
   Velocity velocity;
   Velocity sub_pixel;
   BulletSpeed speed;
-  bool in_flight = false;
   float direction = 0;
   int num_ricochets = 0; // Current number of in-flight ricochets
   int max_ricochets;     // Max number of ricochets allowed
@@ -46,16 +46,25 @@ private:
   /**
    * @brief: Changes directions (for use after hitting wall)
    */
-  void updateDirection(float direction);
+  void updateDirection(float direction, BulletRicochetDir wallDir);
+
+  /**
+   * @brief: After bullet has finished firing, reset all
+   *         affected variables.
+   */
+  void reset();
 
 public:
+  bool in_flight = false;
+
   /**
    * @brief: Set initial position and direction for shooting
    * @param stage The stage to attach the bullet to
+   * @param tank The tank in the stage to attach the bullet to
    * @param speed The speed the bullet should travel
    * @param max_ricochets The max number of ricochets the bullet has
    */
-  Bullet(Stage *stage, BulletSpeed speed, int max_ricochets);
+  Bullet(Stage *stage, Tank *tank, BulletSpeed speed, int max_ricochets);
 
   /**
    * @brief: Set initial position and direction for shooting

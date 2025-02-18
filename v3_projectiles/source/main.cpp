@@ -78,8 +78,9 @@ void updateSprites(Stage *stage, Cursor *cursor) {
   // Update all the tank sprite positions
   for (int i = 0; i < stage->num_tanks; i++) {
     stage->tanks[i]->updateOAM();
+
     // Update positions of any active bullet sprites for each tank
-    for (int j = 0; j < stage->tanks[i]->active_bullets; j++) {
+    for (int j = 0; j < stage->tanks[i]->max_bullets; j++) {
       stage->tanks[i]->bullets[j]->updatePosition();
     }
   }
@@ -119,7 +120,7 @@ int main(void) {
     }
     // Draw bullets using GL2D
     for (int i = 0; i < stage->num_tanks; i++) {
-      for (int j = 0; j < stage->tanks[i]->active_bullets; j++) {
+      for (int j = 0; j < stage->tanks[i]->max_bullets; j++) {
         stage->tanks[i]->bullets[j]->draw();
       }
     }

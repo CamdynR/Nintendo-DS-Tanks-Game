@@ -188,7 +188,7 @@ Tank::Tank(Stage *stage, int x, int y, TankColor color)
   this->body->id = Sprite::num_sprites++;
   this->body->palette_alpha = this->body->id;
   this->body->affine_index = this->body->id;
-  this->body->priority = 2;
+  this->body->priority = 3;
 
   // Update Sprite ID Count
   // Set the oam attributes for the tank turret
@@ -197,15 +197,28 @@ Tank::Tank(Stage *stage, int x, int y, TankColor color)
   this->turret->affine_index = this->turret->id;
   this->turret->priority = 1;
 
+  // Initialize the fireblast animation
+  this->fire_blast->id = Sprite::num_sprites++;
+  this->fire_blast->palette_alpha = this->fire_blast->id;
+  this->fire_blast->affine_index = -1;
+  this->fire_blast->priority = 2;
+  this->fire_blast->hide = true;
+  this->fire_blast->num_anim_frames = 3;
+  this->fire_blast->anim_speed = 3;
+  this->fire_blast->tile_offset = {8, 20};
+
   // Initialize the tank body->and turret graphics
   this->body->sprite_sheet_pos = {0, 0 + color};
   this->turret->sprite_sheet_pos = {3, 0 + color};
+  this->fire_blast->sprite_sheet_pos = {1, 11};
   this->body->initGfx();
   this->turret->initGfx();
+  this->fire_blast->initGfx();
 
   // Display the initial graphics frames on screen
   this->body->copyGfxFrameToVRAM();
   this->turret->copyGfxFrameToVRAM();
+  this->fire_blast->copyGfxFrameToVRAM();
 
   // Create and initialize the bullet sprites for this tank
   createBullets();
@@ -219,21 +232,35 @@ Tank::~Tank() {
       bullets[i] = nullptr;
     }
   }
+
+  // Clean up tank body and turret sprites
+  if (body != nullptr) {
+    delete body;
+    body = nullptr;
+  }
+
+  if (turret != nullptr) {
+    delete turret;
+    turret = nullptr;
+  }
 }
 
 void Tank::setPosition(char axis, int value) {
   if (axis == 'x') {
     body->pos.x = value;
     turret->pos.x = value;
+    fire_blast->pos.x = value;
   } else if (axis == 'y') {
     body->pos.y = value;
     turret->pos.y = value;
+    fire_blast->pos.y = value;
   }
 }
 
 void Tank::setPosition(int x, int y) {
   body->pos = {x, y};
   turret->pos = {x, y};
+  fire_blast->pos = {x, y};
 }
 
 int Tank::getPosition(char axis) {
@@ -355,7 +382,7 @@ void Tank::move(TankDirection direction) {
     }
   }
 
-  if (hasMoved && Stage::frame_counter % body->anim_speed == 0) {
+  if (hasMoved) {
     body->incrementAnimationFrame(true);
     body->copyGfxFrameToVRAM();
   }
@@ -397,9 +424,16 @@ void Tank::updateOAM() {
     body->tile_offset.y = 8;
   }
 
+  // Animate the fireblast if it is active
+  if (!fire_blast->hide) {
+    fire_blast->incrementAnimationFrame(false, false);
+    fire_blast->copyGfxFrameToVRAM();
+  }
+
   // Update the OAM
   body->updateOAM();
   turret->updateOAM();
+  fire_blast->updateOAM();
 
   // Reset rotational adjustment
   setOffset(8, 8);
@@ -409,19 +443,23 @@ void Tank::createBullets() {
   // Initialize all bullet pointers
   for (int i = 0; i < max_bullets; i++) {
     // Create new Bullet with this tank as owner
-    bullets[i] = new Bullet(stage, bullet_speed, max_bullet_ricochets);
+    bullets[i] = new Bullet(stage, this, bullet_speed, max_bullet_ricochets);
   }
 }
 
 void Tank::fire() {
-  // Return if no bullets left
-  if (active_bullets >= max_bullets) return;
   // Fire the next available bullet
-  bullets[active_bullets++]->fire(getPosition(), turret->rotation_angle);
+  for (int i = 0; i < max_bullets; i++) {
+    if (bullets[i]->in_flight) continue;
+    bullets[i]->fire(getPosition(), turret->rotation_angle);
+    // Show the fire blast animation
+    this->fire_blast->hide = false;
+    break;
+  }
 }
 
 void Tank::updateBulletPositions() {
-  for (int i = 0; i < active_bullets; i++) {
+  for (int i = 0; i < max_bullets; i++) {
     bullets[i]->updatePosition();
   }
 }

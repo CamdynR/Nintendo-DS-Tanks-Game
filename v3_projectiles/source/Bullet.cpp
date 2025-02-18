@@ -11,8 +11,11 @@ Camdyn Rasque
 //---------------------------------------------------------------------------------
 
 #include "Bullet.h"
+#include "Tank.h"
 #include "bullet-sprite.h"
 #include "math.h"
+
+#include <stdio.h>
 
 //---------------------------------------------------------------------------------
 //
@@ -76,7 +79,7 @@ BulletRicochetDir Bullet::checkForRicochet(Position &pos) {
   return B_NO_RICOCHET; // No collisions with barriers
 }
 
-void Bullet::updateDirection(float direction) {
+void Bullet::updateDirection(float direction, BulletRicochetDir wallDir) {
   this->direction = direction;
 
   // Convert to standard mathematical angle (clockwise from East = 0°)
@@ -87,6 +90,45 @@ void Bullet::updateDirection(float direction) {
   velocity = {-cosf(angle_rad) * speed, -sinf(angle_rad) * speed};
   // Reset sub_pixel
   sub_pixel = {0.0f, 0.0f};
+
+  // Move bullet out of wall if it accidentally slipped in
+  if (wallDir == B_NO_RICOCHET) return;
+  switch (wallDir) {
+  case B_RIC_DIR_N:
+    for (int i = pos.x; i < pos.x + width; i++) {
+      if (stage->barriers[pos.y][i] == 1) pos.y++;
+    }
+    break;
+  case B_RIC_DIR_S:
+    for (int i = pos.x; i < pos.x + width; i++) {
+      if (stage->barriers[pos.y + height - 1][i] == 1) pos.y--;
+    }
+    break;
+  case B_RIC_DIR_W:
+    for (int i = pos.y; i < pos.y + height; i++) {
+      if (stage->barriers[i][pos.x] == 1) pos.x++;
+    }
+    break;
+  case B_RIC_DIR_E:
+    for (int i = pos.y; i < pos.y + height; i++) {
+      if (stage->barriers[i][pos.x + width - 1] == 1) pos.x--;
+    }
+    break;
+  default:
+    break;
+  }
+}
+
+void Bullet::reset() {
+  // Hide the bullet
+  in_flight = false;
+  visible = false;
+  // Reset variables back to zero
+  direction = 0;
+  num_ricochets = 0;
+  pos = {0, 0};
+  velocity = {0, 0};
+  sub_pixel = {0, 0};
 }
 
 //-------------------------------------------------------------------------------
@@ -95,8 +137,8 @@ void Bullet::updateDirection(float direction) {
 //
 //-------------------------------------------------------------------------------
 
-Bullet::Bullet(Stage *stage, BulletSpeed speed, int max_ricochets)
-    : stage(stage), speed(speed), max_ricochets(max_ricochets) {
+Bullet::Bullet(Stage *stage, Tank *tank, BulletSpeed speed, int max_ricochets)
+    : stage(stage), tank(tank), speed(speed), max_ricochets(max_ricochets) {
 
   // Set the bitmap data from bullet sprite
   sprite_offset = {-1, -1};
@@ -107,8 +149,10 @@ Bullet::Bullet(Stage *stage, BulletSpeed speed, int max_ricochets)
 void Bullet::fire(Position position, float direction) {
   this->in_flight = true;
   this->visible = true;
-  this->pos = {position.x + 8, position.y - 10};
-  updateDirection(direction);
+  this->pos = {position.x + 5, position.y - 11};
+  updateDirection(direction, B_NO_RICOCHET);
+
+  iprintf("Direction: %d\n", (int)direction);
 }
 
 void Bullet::updatePosition() {
@@ -141,9 +185,14 @@ void Bullet::updatePosition() {
   }
 
   BulletRicochetDir dir = checkForRicochet(newPos);
-  if (dir != B_NO_RICOCHET) {
-    float new_dir = calculateReflectionDirection(dir);
-    updateDirection(new_dir);
+  if (dir != B_NO_RICOCHET) {            // If there is a ricochet
+    if (num_ricochets < max_ricochets) { // If we haven't hit the max ricochets
+      num_ricochets++;
+      float new_dir = calculateReflectionDirection(dir);
+      updateDirection(new_dir, dir);
+    } else { // If we have hit max ricochets
+      reset();
+    }
   } else {
     pos = {newPos.x, newPos.y};
   }

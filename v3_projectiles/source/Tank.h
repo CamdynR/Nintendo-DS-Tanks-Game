@@ -116,6 +116,7 @@ public:
   // Tank Component Sprites
   Sprite *body = new Sprite();
   Sprite *turret = new Sprite();
+  Sprite *fire_blast = new Sprite();
 
   // Tank Attributes
   TankDirection direction; // Start facing north
@@ -135,7 +136,6 @@ public:
   Bullet *bullets[MAX_POSSIBLE_BULLETS];     // Hold the bullet sprites
   int max_bullets = MAX_POSSIBLE_BULLETS;    // Default to player
   int max_bullet_ricochets;
-  int active_bullets = 0;
 
   /**
    * Struct constructor
