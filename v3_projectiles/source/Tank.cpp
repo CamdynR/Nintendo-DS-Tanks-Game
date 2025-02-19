@@ -203,7 +203,7 @@ Tank::Tank(Stage *stage, int x, int y, TankColor color)
   this->fire_blast->affine_index = -1;
   this->fire_blast->priority = 2;
   this->fire_blast->hide = true;
-  this->fire_blast->num_anim_frames = 1;
+  this->fire_blast->num_anim_frames = 3;
   this->fire_blast->anim_speed = 3;
 
   // Initialize the tank body->and turret graphics
@@ -289,11 +289,14 @@ void Tank::setOffset(int x, int y) {
   body->tile_offset = {x, y};
   turret->tile_offset = {x, y};
 
+  // Convert angle to radians and adjust for coordinate system
+  float angle_rad = turret->rotation_angle * M_PI / 180.0f;
+
   // center -> x,y-2
   // radius -> 13
   fire_blast->tile_offset = {
-    x + 13 * sin(turret->rotation_angle),
-    y + 13 * cos(turret->rotation_angle)
+    x + 14 * sin(angle_rad),
+    (y - 2) + 14 * cos(angle_rad)
   };
 }
 
@@ -446,7 +449,7 @@ void Tank::updateOAM() {
 
   // Animate the fireblast if it is active
   if (!fire_blast->hide) {
-    fire_blast->incrementAnimationFrame(false, true);
+    fire_blast->incrementAnimationFrame(false, false);
     fire_blast->copyGfxFrameToVRAM();
   }
 
