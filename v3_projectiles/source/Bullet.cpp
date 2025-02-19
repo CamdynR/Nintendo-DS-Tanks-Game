@@ -173,38 +173,53 @@ void Bullet::updatePosition() {
   sub_pixel.y += velocity.y;
 
   Position newPos = { pos.x, pos.y };
+  Position stepPos = { pos.x, pos.y };
+  bool collision = false;
 
-  // Update position when accumulated change >= 1 pixel
-  while (sub_pixel.x >= 1.0f) {
-    newPos.x += 1;
-    sub_pixel.x -= 1.0f;
-  }
-  while (sub_pixel.x <= -1.0f) {
-    newPos.x -= 1;
-    sub_pixel.x += 1.0f;
-  }
-
-  while (sub_pixel.y >= 1.0f) {
-    newPos.y += 1;
-    sub_pixel.y -= 1.0f;
-  }
-  while (sub_pixel.y <= -1.0f) {
-    newPos.y -= 1;
-    sub_pixel.y += 1.0f;
-  }
-
-  BulletRicochetDir dir = checkForRicochet(newPos);
-  if (dir != B_NO_RICOCHET) {            // If there is a ricochet
-    if (num_ricochets < max_ricochets) { // If we haven't hit the max ricochets
-      num_ricochets++;
-      float new_dir = calculateReflectionDirection(dir);
-      iprintf("Wall Dir: %d\n", dir);
-      iprintf("New: (%d, %d), Old: (%d, %d)\n", newPos.x, newPos.y, pos.x, pos.y);
-      updateDirection(new_dir, dir);
-    } else { // If we have hit max ricochets
-      reset();
+  // Handle X movement one pixel at a time
+  while (sub_pixel.x >= 1.0f || sub_pixel.x <= -1.0f) {
+    int step = (sub_pixel.x > 0) ? 1 : -1;
+    stepPos.x += step;
+    
+    BulletRicochetDir dir = checkForRicochet(stepPos);
+    if (dir != B_NO_RICOCHET) {
+      collision = true;
+      if (num_ricochets < max_ricochets) {
+        num_ricochets++;
+        float new_dir = calculateReflectionDirection(dir);
+        updateDirection(new_dir, dir);
+      } else {
+        reset();
+      }
+      break;
     }
-  } else {
-    pos = newPos;
+    
+    newPos.x = stepPos.x;
+    sub_pixel.x += (step > 0) ? -1.0f : 1.0f;
   }
+
+  // Only check Y movement if no X collision occurred
+  if (!collision) {
+    while (sub_pixel.y >= 1.0f || sub_pixel.y <= -1.0f) {
+      int step = (sub_pixel.y > 0) ? 1 : -1;
+      stepPos.y += step;
+      
+      BulletRicochetDir dir = checkForRicochet(stepPos);
+      if (dir != B_NO_RICOCHET) {
+        if (num_ricochets < max_ricochets) {
+          num_ricochets++;
+          float new_dir = calculateReflectionDirection(dir);
+          updateDirection(new_dir, dir);
+        } else {
+          reset();
+        }
+        break;
+      }
+      
+      newPos.y = stepPos.y;
+      sub_pixel.y += (step > 0) ? -1.0f : 1.0f;
+    }
+  }
+
+  pos = newPos;
 }
