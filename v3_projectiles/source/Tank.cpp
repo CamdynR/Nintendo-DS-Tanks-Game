@@ -219,12 +219,6 @@ Tank::Tank(Stage *stage, int x, int y, TankColor color)
   this->turret->copyGfxFrameToVRAM();
   this->fire_blast->copyGfxFrameToVRAM();
 
-  // Store position of center of tank
-  center = {
-    body->pos.x + body->tile_offset.x,
-    body->pos.y + body->tile_offset.y
-  };
-
   // Create and initialize the bullet sprites for this tank
   createBullets();
 }
@@ -255,12 +249,10 @@ void Tank::setPosition(char axis, int value) {
     body->pos.x = value;
     turret->pos.x = value;
     fire_blast->pos.x = value;
-    center.x = value + body->tile_offset.x;
   } else if (axis == 'y') {
     body->pos.y = value;
     turret->pos.y = value;
     fire_blast->pos.y = value;
-    center.y = value + body->tile_offset.y;
   }
 }
 
@@ -268,12 +260,6 @@ void Tank::setPosition(int x, int y) {
   body->pos = {x, y};
   turret->pos = {x, y};
   fire_blast->pos = {x, y};
-
-  // Update position of center of tank
-  center = {
-    x + body->tile_offset.x,
-    y + body->tile_offset.y
-  };
 }
 
 int Tank::getPosition(char axis) {
@@ -295,12 +281,17 @@ void Tank::setOffset(int x, int y) {
   // center -> x,y-2
   // radius -> 13
   fire_blast->tile_offset = {
-    x + 14 * sin(angle_rad),
-    (y - 2) + 14 * cos(angle_rad)
+    (int)(x + 14 * sin(angle_rad)),
+    (int)((y - 2) + 14 * cos(angle_rad))
   };
 }
 
 Position &Tank::getPosition() { return body->pos; }
+
+Position Tank::getOffsetPosition() {
+  return { body->pos.x - body->tile_offset.x,
+           body->pos.y - body->tile_offset.y };
+}
 
 void Tank::interpolateBodyRotation() {
   // Normalize both angles to [0, 360) range first
@@ -413,12 +404,12 @@ void Tank::move(TankDirection direction) {
 
 void Tank::rotateTurret(touchPosition &touch) {
   // Calculate the angle between the tank and the touch position
+  Position center = getPosition();
+  center.x += TANK_SIZE / 2;
+  center.y += TANK_SIZE / 2;
   float angle = calculateAngle(center.x, center.y, touch.px, touch.py);
   turret->rotation_angle = fmod(270 - angle, 360.0f);
   if (turret->rotation_angle < 0) turret->rotation_angle += 360.0f;
-
-  // fire_blast->tile_offset.x = tankCenterX;
-  // fire_blast->tile_offset.y = tankCenterY;
 }
 
 void Tank::updateOAM() {
@@ -449,8 +440,8 @@ void Tank::updateOAM() {
 
   // Animate the fireblast if it is active
   if (!fire_blast->hide) {
-    fire_blast->incrementAnimationFrame(false, false);
     fire_blast->copyGfxFrameToVRAM();
+    fire_blast->incrementAnimationFrame(false, false);
   }
 
   // Update the OAM
@@ -474,7 +465,7 @@ void Tank::fire() {
   // Fire the next available bullet
   for (int i = 0; i < max_bullets; i++) {
     if (bullets[i]->in_flight) continue;
-    bullets[i]->fire(getPosition(), turret->rotation_angle);
+    bullets[i]->fire();
     // Show the fire blast animation
     this->fire_blast->hide = false;
     break;

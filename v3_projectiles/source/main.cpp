@@ -82,8 +82,22 @@ void updateSprites(Stage *stage, Cursor *cursor) {
     // Update positions of any active bullet sprites for each tank
     for (int j = 0; j < stage->tanks[i]->max_bullets; j++) {
       stage->tanks[i]->bullets[j]->updatePosition();
+      stage->tanks[i]->bullets[j]->updateOAM();
     }
   }
+}
+
+/**
+ * @brief Renders all bitmap drawings in OpenGL
+ * @param stage the stage to update the drawings of
+ * @param cursor the player's cursor sprite
+ */
+void updateBitmapGfx(Stage *stage, Cursor *cursor) {
+  // All GL drawing happens here after sprites have been moved
+  glBegin2D();
+  // Draw dotted line to connect to tank
+  if (!cursor->hide) cursor->connectToTank(stage->tanks[0]);
+  glEnd2D();
 }
 
 //---------------------------------------------------------------------------------
@@ -111,21 +125,8 @@ int main(void) {
     handleTouchInput(stage, cursor);
     // Update sprites in the Object Attribute Model
     updateSprites(stage, cursor);
-
-    // All GL drawing happens here after sprites have been moved
-    glBegin2D();
-    // Draw dotted line to connect to tank
-    if (!cursor->hide) {
-      cursor->connectToTank(stage->tanks[0]); // Draw the dotted line
-    }
-    // Draw bullets using GL2D
-    for (int i = 0; i < stage->num_tanks; i++) {
-      for (int j = 0; j < stage->tanks[i]->max_bullets; j++) {
-        stage->tanks[i]->bullets[j]->draw();
-      }
-    }
-
-    glEnd2D();
+    // Update any bitmap drawings
+    updateBitmapGfx(stage, cursor);
 
     // Increment the frame counter
     Stage::frame_counter++;

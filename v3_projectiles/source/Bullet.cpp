@@ -51,29 +51,19 @@ float Bullet::calculateReflectionDirection(BulletRicochetDir wallDir) {
 }
 
 BulletRicochetDir Bullet::checkForRicochet(Position &pos) {
-  // Top left corner of bullet
-  Position bTopLeft = {pos.x, pos.y};
-  Position bBotRight = {pos.x + width - 1 + (2 * sprite_offset.x),
-                        pos.y + height - 1 + (2 * sprite_offset.y)};
+  // Adjusted position for gap in sprite pixels from edge of tile
+  int adjPosX = pos.x + 13;
+  int adjPosY = pos.y + 13;
 
-  // Check for barriers or screen bounds to the north and south
-  for (int i = bTopLeft.x + 1; i < bBotRight.x; i++) {
-    if (bTopLeft.y < 0 || stage->barriers[bTopLeft.y][i] == 1) {
-      return B_RIC_DIR_N;
-    } else if (bBotRight.y >= SCREEN_HEIGHT ||
-               stage->barriers[bBotRight.y][i] == 1) {
-      return B_RIC_DIR_S;
-    }
+  // Check North and South
+  for (int i = 1; i < width - 1; ++i) {
+      if (adjPosY <= 0 || stage->barriers[adjPosY][adjPosX + i] == 1) return B_RIC_DIR_N;
+      if (adjPosY + height - 1 >= SCREEN_HEIGHT || stage->barriers[adjPosY + height - 1][adjPosX + i] == 1) return B_RIC_DIR_S;
   }
-
-  // Check for barriers or screen bounds to the west and east
-  for (int i = bTopLeft.y + 1; i < bBotRight.y; i++) {
-    if (bTopLeft.x < 0 || stage->barriers[i][bTopLeft.x] == 1) {
-      return B_RIC_DIR_W;
-    } else if (bBotRight.x >= SCREEN_WIDTH ||
-               stage->barriers[i][bBotRight.x] == 1) {
-      return B_RIC_DIR_E;
-    }
+  // Check East and West
+  for (int i = 1; i < height - 1; ++i) {
+      if (adjPosX <= 0 || stage->barriers[adjPosY + i][adjPosX] == 1) return B_RIC_DIR_W;
+      if (adjPosX + width - 1 >= SCREEN_WIDTH || stage->barriers[adjPosY + i][adjPosX + width - 1] == 1) return B_RIC_DIR_E;
   }
 
   return B_NO_RICOCHET; // No collisions with barriers
@@ -92,37 +82,37 @@ void Bullet::updateDirection(float direction, BulletRicochetDir wallDir) {
   sub_pixel = {0.0f, 0.0f};
 
   // Move bullet out of wall if it accidentally slipped in
-  if (wallDir == B_NO_RICOCHET) return;
-  switch (wallDir) {
-  case B_RIC_DIR_N:
-    for (int i = pos.x; i < pos.x + width; i++) {
-      if (stage->barriers[pos.y][i] == 1) pos.y++;
-    }
-    break;
-  case B_RIC_DIR_S:
-    for (int i = pos.x; i < pos.x + width; i++) {
-      if (stage->barriers[pos.y + height - 1][i] == 1) pos.y--;
-    }
-    break;
-  case B_RIC_DIR_W:
-    for (int i = pos.y; i < pos.y + height; i++) {
-      if (stage->barriers[i][pos.x] == 1) pos.x++;
-    }
-    break;
-  case B_RIC_DIR_E:
-    for (int i = pos.y; i < pos.y + height; i++) {
-      if (stage->barriers[i][pos.x + width - 1] == 1) pos.x--;
-    }
-    break;
-  default:
-    break;
-  }
+  // if (wallDir == B_NO_RICOCHET) return;
+  // switch (wallDir) {
+  // case B_RIC_DIR_N:
+  //   for (int i = pos.x; i < pos.x + width; i++) {
+  //     if (stage->barriers[pos.y][i] == 1) pos.y++;
+  //   }
+  //   break;
+  // case B_RIC_DIR_S:
+  //   for (int i = pos.x; i < pos.x + width; i++) {
+  //     if (stage->barriers[pos.y + height - 1][i] == 1) pos.y--;
+  //   }
+  //   break;
+  // case B_RIC_DIR_W:
+  //   for (int i = pos.y; i < pos.y + height; i++) {
+  //     if (stage->barriers[i][pos.x] == 1) pos.x++;
+  //   }
+  //   break;
+  // case B_RIC_DIR_E:
+  //   for (int i = pos.y; i < pos.y + height; i++) {
+  //     if (stage->barriers[i][pos.x + width - 1] == 1) pos.x--;
+  //   }
+  //   break;
+  // default:
+  //   break;
+  // }
 }
 
 void Bullet::reset() {
   // Hide the bullet
   in_flight = false;
-  visible = false;
+  hide = true;
   // Reset variables back to zero
   direction = 0;
   num_ricochets = 0;
@@ -140,17 +130,37 @@ void Bullet::reset() {
 Bullet::Bullet(Stage *stage, Tank *tank, BulletSpeed speed, int max_ricochets)
     : stage(stage), tank(tank), speed(speed), max_ricochets(max_ricochets) {
 
-  // Set the bitmap data from bullet sprite
-  sprite_offset = {-1, -1};
-  setPaletteData(bullet_spritePal);
-  setBitmapData(bullet_spriteBitmap, 4, 8, 8);
+  // Set sprite sheet position
+  this->sprite_sheet_pos = {0, 12};
+
+  // Assign an ID
+  this->id = Sprite::num_sprites++;
+  this->palette_alpha = this->id;
+  this->affine_index = -1;
+  this->priority = 2;
+  // Hide until shown on screen
+  this->hide = true;
+
+  // Initialize graphics and copy to VRAM
+  initGfx();
+  copyGfxFrameToVRAM();
 }
 
-void Bullet::fire(Position position, float direction) {
+void Bullet::fire() {
   this->in_flight = true;
-  this->visible = true;
-  this->pos = {position.x + 5, position.y - 11};
-  updateDirection(direction, B_NO_RICOCHET);
+  this->hide = false;
+
+  // Grab initial position from tank
+  this->pos = tank->getOffsetPosition();
+  // Convert angle to radians and adjust for coordinate system
+  float rotation_angle = tank->turret->rotation_angle;
+  float angle_rad = rotation_angle * M_PI / 180.0f;
+  // Update position based on rotation angle
+  this->pos.x -= (int)(12 * sin(angle_rad));
+  this->pos.y -= (int)(12 * cos(angle_rad));
+
+  // Update direction based on tank turret rotation
+  updateDirection(rotation_angle, B_NO_RICOCHET);
 
   iprintf("Direction: %d\n", (int)direction);
 }
@@ -162,8 +172,7 @@ void Bullet::updatePosition() {
   sub_pixel.x += velocity.x;
   sub_pixel.y += velocity.y;
 
-  // New Position
-  Position newPos = {pos.x, pos.y};
+  Position newPos = { pos.x, pos.y };
 
   // Update position when accumulated change >= 1 pixel
   while (sub_pixel.x >= 1.0f) {
@@ -189,16 +198,13 @@ void Bullet::updatePosition() {
     if (num_ricochets < max_ricochets) { // If we haven't hit the max ricochets
       num_ricochets++;
       float new_dir = calculateReflectionDirection(dir);
+      iprintf("Wall Dir: %d\n", dir);
+      iprintf("New: (%d, %d), Old: (%d, %d)\n", newPos.x, newPos.y, pos.x, pos.y);
       updateDirection(new_dir, dir);
     } else { // If we have hit max ricochets
       reset();
     }
   } else {
-    pos = {newPos.x, newPos.y};
+    pos = newPos;
   }
-}
-
-void Bullet::draw() {
-  if (!in_flight) return;
-  BitmapSprite::draw(); // Draw the red square
 }

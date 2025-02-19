@@ -37,7 +37,21 @@ fs.createReadStream(inputPath)
       outputArray.push(row);
     }
 
-    let cppArray = `#ifndef IMAGE_DATA_H\n#define IMAGE_DATA_H\n\nconst int IMAGE_WIDTH = ${width};\nconst int IMAGE_HEIGHT = ${height};\n\nconst int IMAGE_DATA[${height}][${width}] = {\n`;
+    let cppArray = `#ifndef STAGE_1_H
+#define STAGE_1_H
+
+#include "../Stage.h"
+#include "../Tank.h"
+#include "nds/arm9/video.h"
+
+const int STAGE_1_WIDTH = 256;
+const int STAGE_1_HEIGHT = 192;
+
+const int STAGE_1_CELL_SIZE = 16;
+const int STAGE_1_NUM_TANKS = 2; // Includes user and enemies
+Tank **CREATE_STAGE_1_TANKS(Stage *stage);
+
+const int STAGE_1_BARRIERS[SCREEN_HEIGHT][SCREEN_WIDTH] = {\n`;
     cppArray += outputArray
       .map((row) => `    { ${row.join(', ')} }`)
       .join(',\n');

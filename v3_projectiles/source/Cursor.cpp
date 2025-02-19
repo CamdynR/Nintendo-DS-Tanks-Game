@@ -21,9 +21,6 @@ Camdyn Rasque
 Cursor::Cursor() {
   // Set sprite sheet position
   this->sprite_sheet_pos = {0, 11};
-  // Initialize graphics and copy to VRAM
-  initGfx();
-  copyGfxFrameToVRAM();
 
   // Assign an ID
   this->id = Sprite::num_sprites++;
@@ -32,6 +29,10 @@ Cursor::Cursor() {
   // Hide until shown on screen
   this->hide = true;
   this->tile_offset = {16, 16};
+
+  // Initialize graphics and copy to VRAM
+  initGfx();
+  copyGfxFrameToVRAM();
 }
 
 void Cursor::setPosition(int x, int y) { pos = {x, y}; }

@@ -14,6 +14,8 @@ Camdyn Rasque
 #include "Stage.h"
 #include "sprite-sheet.h"
 
+#include <gl2d.h>
+
 //-------------------------------------------------------------------------------
 //
 // STRUCT FUNCTIONS

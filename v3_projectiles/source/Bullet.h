@@ -1,7 +1,7 @@
 #ifndef BULLET_H
 #define BULLET_H
 
-#include "BitmapSprite.h"
+#include "Sprite.h"
 #include "Stage.h"
 
 enum BulletSpeed { B_SPEED_NORMAL = 2, B_SPEED_FAST = 3 };
@@ -18,7 +18,7 @@ struct Velocity {
   float y;
 };
 
-class Bullet : public BitmapSprite {
+class Bullet : public Sprite {
 private:
   Stage *stage; // Stage bullet is attached to
   Tank *tank;   // The tank in the stage the bullet is attached to
@@ -28,6 +28,9 @@ private:
   float direction = 0;
   int num_ricochets = 0; // Current number of in-flight ricochets
   int max_ricochets;     // Max number of ricochets allowed
+
+  const int height = 6;
+  const int width = 6;
 
   /**
    * @brief: Checks to see if a wall has been hit
@@ -68,20 +71,13 @@ public:
 
   /**
    * @brief: Set initial position and direction for shooting
-   * @param position The starting position to fire the bullet from
-   * @param direction The starting direction the bullet should fly in
    */
-  void fire(Position position, float direction);
+  void fire();
 
   /**
    * @brief: Updates the position given the bullet's velocity
    */
   void updatePosition();
-
-  /**
-   * @breif: Draw the bullet on screen
-   */
-  void draw() override;
 };
 
 #endif // BULLET_H
