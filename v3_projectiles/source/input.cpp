@@ -25,12 +25,25 @@ void handleButtonInput(Stage *stage) {
   int keys_held = keysHeld();
   int keys_down = keysDown();
 
-  /*******************/
-  /* Direction Input */
-  /*******************/
+  // For Testing
+  if (keys_down & KEY_START) {
+    for (int i = 0; i < stage->num_tanks; i++) {
+      stage->tanks[i]->reset();
+    }
+  } else if (keys_down & KEY_SELECT) {
+    for (int i = 0; i < stage->num_tanks; i++) {
+      stage->tanks[i]->explode();
+    }
+  }
 
   // Grab a reference to the player tank
   Tank *playerTank = stage->tanks[0];
+  // Don't perform any inputs if player is dead
+  if (!playerTank->alive) return;
+
+  /*******************/
+  /* Direction Input */
+  /*******************/
 
   // Set initial direction based on combined key presses
   TankDirection direction = playerTank->direction;
@@ -72,9 +85,15 @@ void handleButtonInput(Stage *stage) {
   }
 
   // Lay Mine
+  // TODO
 }
 
 void handleTouchInput(Stage *stage, Cursor *cursor) {
+  // Grab a reference to the player tank
+  Tank *playerTank = stage->tanks[0];
+  // Don't perform any inputs if player is dead
+  if (!playerTank->alive) return;
+
   // Scan for keys
   scanKeys();
   int keys = keysHeld();

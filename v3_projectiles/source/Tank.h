@@ -84,6 +84,8 @@ enum TankBehavior {
 class Stage; // Avoids circular dependencies
 class Tank {
 private:
+  Position initial_position; // For testing purposes
+
   Stage *stage;
 
   /**
@@ -114,12 +116,13 @@ private:
 
 public:
   // Tank Component Sprites
-  Sprite *body = new Sprite();
-  Sprite *turret = new Sprite();
-  Sprite *fire_blast = new Sprite();
+  Sprite *body;
+  Sprite *turret;
+  Sprite *explosion;
 
   // Tank Attributes
-  TankDirection direction; // Start facing north
+  bool alive = true;       // Is the tank alive
+  TankDirection direction = T_DIR_N; // Start facing north
   TankMovement movement;   // How fast the tank moves
   TankColor color;         // Color of the tank - Default to player
   TankFireRateCooldown fire_rate_cooldown; // Default to player
@@ -200,11 +203,6 @@ public:
   void rotateTurret(touchPosition &touch);
 
   /**
-   * @brief Updates the OAM for both the tank body->and tank turret
-   */
-  void updateOAM();
-
-  /**
    * @brief Creates the bullet sprites and stores them in the bullets arrays
    */
   void createBullets();
@@ -218,6 +216,22 @@ public:
    * @brief Updates the positions for any in-flight bullets
    */
   void updateBulletPositions();
+
+  /**
+   * @brief: Marks the tank for explosion so the necessary
+   *         animations can be played
+   */
+  void explode();
+
+  /**
+   * @brief: For testing purposes, reset stage back to normal
+   */
+  void reset();
+
+  /**
+   * @brief Updates the OAM for both the tank body->and tank turret
+   */
+  void updateOAM();
 };
 
 //---------------------------------------------------------------------------------

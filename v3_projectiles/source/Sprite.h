@@ -63,7 +63,7 @@ public:
   /**
    * @brief Updates the object attribute memory
    */
-  void updateOAM();
+  virtual void updateOAM();
 };
 
 #endif // SPRITE_H

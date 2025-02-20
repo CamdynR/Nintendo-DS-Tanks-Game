@@ -6,11 +6,12 @@
 
 enum BulletSpeed { B_SPEED_NORMAL = 2, B_SPEED_FAST = 3 };
 enum BulletRicochetDir {
-  B_NO_RICOCHET = -1,
-  B_RIC_DIR_N = 0,
-  B_RIC_DIR_E = 1,
-  B_RIC_DIR_S = 2,
-  B_RIC_DIR_W = 3,
+  B_NO_RICOCHET,
+  B_RIC_DIR_N,
+  B_RIC_DIR_E,
+  B_RIC_DIR_S,
+  B_RIC_DIR_W,
+  B_RIC_DIR_CORNER
 };
 
 struct Velocity {
@@ -26,11 +27,9 @@ private:
   Velocity sub_pixel;
   BulletSpeed speed;
   float direction = 0;
-  int num_ricochets = 0; // Current number of in-flight ricochets
   int max_ricochets;     // Max number of ricochets allowed
 
-  const int height = 6;
-  const int width = 6;
+  Sprite *ricochet_effect;
 
   /**
    * @brief: Checks to see if a wall has been hit
@@ -59,6 +58,10 @@ private:
 
 public:
   bool in_flight = false;
+  bool has_exploded = false; // True when bullet has hit a tank / wall
+  int num_ricochets = 0; // Current number of in-flight ricochets
+  const int height = 6;
+  const int width = 6;
 
   /**
    * @brief: Set initial position and direction for shooting
@@ -78,6 +81,17 @@ public:
    * @brief: Updates the position given the bullet's velocity
    */
   void updatePosition();
+
+  /**
+   * @brief: Marks the bullet for explosion so the necessary
+   *         animations can be played and the position resets
+   */
+  void explode();
+
+  /**
+   * @brief: Updates the object attribute memory with new data
+   */
+  void updateOAM();
 };
 
 #endif // BULLET_H

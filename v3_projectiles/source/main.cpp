@@ -85,6 +85,9 @@ void updateSprites(Stage *stage, Cursor *cursor) {
       stage->tanks[i]->bullets[j]->updateOAM();
     }
   }
+
+  // Checks to see if any bullets have collided
+  stage->checkForBulletCollision();
 }
 
 /**

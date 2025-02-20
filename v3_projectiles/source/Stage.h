@@ -17,6 +17,11 @@ public:
   Stage(int stageNum); // Constructor
 
   void initBackground();
+
+  /**
+   * @brief: Checks to see if two bullets have collided
+   */
+  void checkForBulletCollision();
 };
 
 #endif // STAGE_H
