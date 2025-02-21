@@ -18,6 +18,7 @@ class Cursor : public Sprite {
 private:
   int height = 14;
   int width = 14;
+  int[] *tail;
 
 public:
   /**

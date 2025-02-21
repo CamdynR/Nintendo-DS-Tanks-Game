@@ -125,7 +125,7 @@ Bullet::Bullet(Stage *stage, Tank *tank, BulletSpeed speed, int max_ricochets)
     : stage(stage), tank(tank), speed(speed), max_ricochets(max_ricochets) {
 
   // Set sprite sheet position
-  this->sprite_sheet_pos = {0, 12};
+  this->sprite_sheet_pos = {3, 13};
 
   // Assign an ID
   this->id = Sprite::num_sprites++;
