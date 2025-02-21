@@ -106,6 +106,6 @@ void handleTouchInput(Stage *stage, Cursor *cursor) {
     cursor->setPosition(touch.px, touch.py); // Update the cursor position
     stage->tanks[0]->rotateTurret(touch);    // Rotate the tank turret
   } else {
-    cursor->hide = true;
+    cursor->hideSprites(); // Hide the cursor and tail sprites
   }
 }

@@ -25,14 +25,40 @@ Cursor::Cursor() {
   // Assign an ID
   this->id = Sprite::num_sprites++;
   this->palette_alpha = this->id;
-  this->affine_index = this->id;
+  this->affine_index = -1;
   // Hide until shown on screen
   this->hide = true;
   this->tile_offset = {16, 16};
 
+  // Create all of the tail sprites
+  createTail();
+
   // Initialize graphics and copy to VRAM
   initGfx();
   copyGfxFrameToVRAM();
+}
+
+void Cursor::createTail() {
+  for (int i = 0; i < numTailSprites; i++) {
+    // Initialize sprite
+    Sprite *tailSegment = new Sprite();
+
+    // Set initial sprite data
+    tailSegment->sprite_sheet_pos = {0, 12};
+    tailSegment->id = Sprite::num_sprites++;
+    tailSegment->palette_alpha = tailSegment->id;
+    tailSegment->affine_index = -1;
+    // Hide until shown on screen
+    tailSegment->hide = true;
+    tailSegment->tile_offset = {14, 14};
+
+    // Update the gfx
+    tailSegment->initGfx();
+    tailSegment->copyGfxFrameToVRAM();
+
+    // Add to tail
+    tail.push_back(tailSegment);
+  }
 }
 
 void Cursor::setPosition(int x, int y) { pos = {x, y}; }
@@ -46,17 +72,32 @@ void Cursor::connectToTank(Tank *playerTank) {
   // Math to connect the two points
   int dx = pos.x - tankCenterX;
   int dy = pos.y - tankCenterY;
-  int steps = 8; // Always have exactly 8 dots
-  float xIncrement = dx / (float)steps;
-  float yIncrement = dy / (float)steps;
+  float xIncrement = dx / (float)numTailSprites;
+  float yIncrement = dy / (float)numTailSprites;
   float x = tankCenterX;
   float y = tankCenterY;
 
-  // Draw the line
-  for (int i = 0; i <= steps; i++) {
-    glBoxFilled(x - 1, y - 1, x + 1, y + 1,
-                RGB15(7, 23, 31)); // Draw smaller circle
+  // Position each tail sprite along the line
+  for (int i = 0; i < numTailSprites; i++) {
+    // Update the position of each tail sprite
+    tail[i]->pos = { (int)x, (int)y };
+    tail[i]->hide = false;  // Make sure the sprite is visible
+
     x += xIncrement;
     y += yIncrement;
+  }
+}
+
+void Cursor::hideSprites() {
+  this->hide = true;
+  for (int i = 0; i < numTailSprites; i++) {
+    tail[i]->hide = true;
+  }
+}
+
+void Cursor::updateOAM() {
+  Sprite::updateOAM();
+  for (int i = 0; i < numTailSprites; i++) {
+    tail[i]->updateOAM();
   }
 }

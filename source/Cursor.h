@@ -5,7 +5,8 @@
 #include "Tank.h"
 #include "calico/types.h"
 #include "sprite-sheet.h"
-#include <gl2d.h>
+// #include <gl2d.h>
+#include <vector>
 #include <nds.h>
 
 //---------------------------------------------------------------------------------
@@ -18,7 +19,8 @@ class Cursor : public Sprite {
 private:
   int height = 14;
   int width = 14;
-  int[] *tail;
+  std::vector<Sprite*> tail;
+  int numTailSprites = 8;
 
 public:
   /**
@@ -27,14 +29,29 @@ public:
   Cursor();
 
   /**
-   * Set the position of where to be on screen
+   * @brief: Set the position of where to be on screen
    */
   void setPosition(int x, int y);
 
   /**
-   * Draws the dotted line between the cursor and the tank
+   * @brief: Creates the necessary tail sprites for the cursor
+   */
+   void createTail();
+
+  /**
+   * @brief: Draws the dotted line between the cursor and the tank
    */
   void connectToTank(Tank *playerTank);
+
+  /**
+   * @brief: Hides the cursor and tail sprites
+   */
+  void hideSprites();
+
+  /**
+   * @brief: Updates the cursor and tail sprites
+   */
+  void updateOAM();
 };
 
 //---------------------------------------------------------------------------------
