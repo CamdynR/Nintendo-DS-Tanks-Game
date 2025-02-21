@@ -95,18 +95,26 @@ void updateSprites(Stage *stage, Cursor *cursor) {
 }
 
 /**
- * @brief Renders all bitmap drawings in OpenGL
+ * @brief Renders all bitmap drawings for the treadmarks in OpenGL
  * @param stage the stage to update the drawings of
  */
 void updateTreadBitmapGfx(Stage *stage) {
-  // All GL drawing happens here after sprites have been moved
-  glBegin2D();
   // Update all the tank sprite positions
-  glPolyFmt(POLY_ALPHA(31) | POLY_CULL_NONE | POLY_ID(3));
+  glPolyFmt(POLY_ALPHA(31) | POLY_CULL_NONE | POLY_ID(2));
   for (int i = 0; i < stage->num_tanks; i++) {
     stage->tanks[i]->drawTreadmarks();
   }
-  glEnd2D();
+}
+
+/**
+ * @brief Renders all bitmap drawings for the cursor in OpenGL
+ * @param stage the stage to update the drawings of
+ * @param cursor the player's cursor sprite
+ */
+void updateCursorBitmapGfx(Stage *stage, Cursor *cursor) {
+  // Draw dotted line to connect to tank
+  glPolyFmt(POLY_ALPHA(31) | POLY_CULL_NONE | POLY_ID(0));
+  if (!cursor->hide) cursor->connectToTank(stage->tanks[0]);
 }
 
 /**
@@ -114,12 +122,14 @@ void updateTreadBitmapGfx(Stage *stage) {
  * @param stage the stage to update the drawings of
  * @param cursor the player's cursor sprite
  */
-void updateCursorBitmapGfx(Stage *stage, Cursor *cursor) {
-  // All GL drawing happens here after sprites have been moved
+void updateGl2dGfx(Stage *stage, Cursor *cursor) {
+  // Begin 2D drawing
   glBegin2D();
-  // Draw dotted line to connect to tank
-  glPolyFmt(POLY_ALPHA(31) | POLY_CULL_NONE | POLY_ID(1));
-  if (!cursor->hide) cursor->connectToTank(stage->tanks[0]);
+  // Draw treads FIRST
+  updateTreadBitmapGfx(stage);
+  // Update any bitmap drawings
+  updateCursorBitmapGfx(stage, cursor);
+  // End 2D drawing
   glEnd2D();
 }
 
@@ -146,15 +156,10 @@ int main(void) {
     // Handle all inputs
     handleButtonInput(stage);
     handleTouchInput(stage, cursor);
-
-    // Draw treads FIRST
-    updateTreadBitmapGfx(stage);
-
     // Update sprites in the Object Attribute Model
     updateSprites(stage, cursor);
-
-    // Update any bitmap drawings
-    updateCursorBitmapGfx(stage, cursor);
+    // Update the OpenGL 2D graphics
+    updateGl2dGfx(stage, cursor);
 
     // Increment the frame counter
     Stage::frame_counter++;

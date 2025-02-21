@@ -454,7 +454,7 @@ void Tank::updateBulletPositions() {
 void Tank::drawTreadmarks() {
   for (int i = 0; i < (int)position_history.size(); i++) {
     // Treadmark color
-    int color = RGB15(15, 15, 15);
+    int color = RGB15(24, 21, 18);
     int treadWidth = 3;
     // Left treadmark
     Position leftMarkStart = { position_history[i].pos };
