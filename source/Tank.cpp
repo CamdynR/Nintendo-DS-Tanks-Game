@@ -15,6 +15,9 @@ Camdyn Rasque
 #include "Sprite.h"
 #include "Stage.h"
 #include <math.h>
+#include <gl2d.h>
+
+#include <stdio.h>
 
 //---------------------------------------------------------------------------------
 //
@@ -87,6 +90,15 @@ bool Tank::noBarrierCollisions(Position &pos) {
 bool Tank::validateMove(Position &pos) {
   return isWithinBounds(pos) && noTanksCollided(pos) &&
          noBarrierCollisions(pos);
+}
+
+void Tank::addPositionHistory() {
+  // Update position history
+  if (position_history_counter >= 3) {
+    position_history_counter = 0;
+    position_history.push_back({getPosition(), direction});
+  }
+  position_history_counter++;
 }
 
 //---------------------------------------------------------------------------------
@@ -189,8 +201,6 @@ Tank::Tank(Stage *stage, int x, int y, TankColor color)
   this->setPosition(x, y);
   this->setOffset(8, 8);
 
-  this->initial_position = { x, y };
-
   // Set the oam attributes for the tank body
   this->body->id = Sprite::num_sprites++;
   this->body->palette_alpha = this->body->id;
@@ -235,7 +245,7 @@ Tank::Tank(Stage *stage, int x, int y, TankColor color)
 
 Tank::~Tank() {
   // Clean up any remaining bullets
-  for (int i = 0; i < MAX_POSSIBLE_BULLETS; i++) {
+  for (int i = (int)bullets.size() - 1; i >= 0; i--) {
     if (bullets[i] != nullptr) {
       delete bullets[i];
       bullets[i] = nullptr;
@@ -255,21 +265,27 @@ Tank::~Tank() {
 }
 
 void Tank::setPosition(char axis, int value) {
-  if (axis == 'x') {
-    body->pos.x = value;
-    turret->pos.x = value;
-    explosion->pos.x = value;
-  } else if (axis == 'y') {
-    body->pos.y = value;
-    turret->pos.y = value;
-    explosion->pos.y = value;
-  }
+  int x = getPosition('x');
+  int y = getPosition('y');
+
+  if (axis == 'x') x = value;
+  else if (axis == 'y') y = value;
+
+  // Update sprite positions
+  body->pos = { x, y };
+  turret->pos = { x, y };
+  explosion->pos = { x, y };
+
+  addPositionHistory();
 }
 
 void Tank::setPosition(int x, int y) {
+  // Update sprite positions
   body->pos = {x, y};
   turret->pos = {x, y};
   explosion->pos = {x, y};
+
+  addPositionHistory();
 }
 
 int Tank::getPosition(char axis) {
@@ -416,7 +432,7 @@ void Tank::createBullets() {
   // Initialize all bullet pointers
   for (int i = 0; i < max_bullets; i++) {
     // Create new Bullet with this tank as owner
-    bullets[i] = new Bullet(stage, this, bullet_speed, max_bullet_ricochets);
+    bullets.push_back(new Bullet(stage, this, bullet_speed, max_bullet_ricochets));
   }
 }
 
@@ -432,6 +448,124 @@ void Tank::fire() {
 void Tank::updateBulletPositions() {
   for (int i = 0; i < max_bullets; i++) {
     bullets[i]->updatePosition();
+  }
+}
+
+void Tank::drawTreadmarks() {
+  for (int i = 0; i < (int)position_history.size(); i++) {
+    // Treadmark color
+    int color = RGB15(15, 15, 15);
+    int treadWidth = 3;
+    // Left treadmark
+    Position leftMarkStart = { position_history[i].pos };
+    Position leftMarkEnd = { position_history[i].pos };
+    // Right treadmark
+    Position rightMarkStart = { position_history[i].pos };
+    Position rightMarkEnd = { position_history[i].pos };
+    switch(position_history[i].dir) {
+      case T_DIR_N:
+        // Left - Start
+        leftMarkStart.y += TANK_SIZE;
+        // Left - End
+        leftMarkEnd.x += treadWidth;
+        leftMarkEnd.y = leftMarkStart.y;
+        // Right - Start
+        rightMarkStart.x += TANK_SIZE - treadWidth - 1;
+        rightMarkStart.y = leftMarkStart.y;
+        // Right - End
+        rightMarkEnd.x = rightMarkStart.x + treadWidth;
+        rightMarkEnd.y = rightMarkStart.y;
+        break;
+      case T_DIR_S:
+        // Left - Start (no change needed)
+        // Left - End
+        leftMarkEnd.x += treadWidth;
+        // Right - Start
+        rightMarkStart.x += TANK_SIZE - treadWidth - 1;
+        // Right - End
+        rightMarkEnd.x = rightMarkStart.x + treadWidth;
+        break;
+      case T_DIR_E:
+        // Left - Start (no change needed)
+        // Left - End
+        leftMarkEnd.y += treadWidth;
+        // Right - Start
+        rightMarkStart.y += TANK_SIZE - treadWidth - 1;
+        // Right - End
+        rightMarkEnd.y = rightMarkStart.y + treadWidth;
+        break;
+      case T_DIR_W:
+        // Left - Start
+        leftMarkStart.x += TANK_SIZE;
+        // Left - End
+        leftMarkEnd.x = leftMarkStart.x;
+        leftMarkEnd.y += treadWidth;
+        // Right - Start
+        rightMarkStart.x = leftMarkStart.x;
+        rightMarkStart.y += TANK_SIZE - treadWidth - 1;
+        // Right - End
+        rightMarkEnd.x = rightMarkStart.x;
+        rightMarkEnd.y = rightMarkStart.y + treadWidth;
+        break;
+      case T_DIR_NE:
+        // Left - Start
+        leftMarkStart.x -= 2;
+        leftMarkStart.y += 8;
+        // Left - End
+        leftMarkEnd.x = leftMarkStart.x + 2;
+        leftMarkEnd.y = leftMarkStart.y + 2;
+        // Right - Start
+        rightMarkStart.x = leftMarkStart.x + 9;
+        rightMarkStart.y = leftMarkStart.y + 9;
+        // Right - End
+        rightMarkEnd.x = leftMarkStart.x + 11;
+        rightMarkEnd.y = leftMarkStart.y + 11;
+        break;
+      case T_DIR_NW:
+        // Left - Start
+        leftMarkStart.x += 8;
+        leftMarkStart.y += TANK_SIZE + 3;
+        // Left - End
+        leftMarkEnd.x = leftMarkStart.x + 2;
+        leftMarkEnd.y = leftMarkStart.y - 4;
+        // Right - Start
+        rightMarkStart.x = leftMarkStart.x + 8;
+        rightMarkStart.y = leftMarkStart.y - 8;
+        // Right - End
+        rightMarkEnd.x = rightMarkStart.x + 2;
+        rightMarkEnd.y = rightMarkStart.y - 4;
+        break;
+      case T_DIR_SE:
+        // Left - Start
+        leftMarkStart.x -= 3;
+        leftMarkStart.y += 9;
+        // Left - End
+        leftMarkEnd.x = leftMarkStart.x + 2;
+        leftMarkEnd.y = leftMarkStart.y - 4;
+        // Right - Start
+        rightMarkStart.x = leftMarkStart.x + 10;
+        rightMarkStart.y = leftMarkStart.y - 12;
+        // Right - End
+        rightMarkEnd.x = rightMarkStart.x - 4;
+        rightMarkEnd.y = rightMarkStart.y + 2;
+        break;
+      case T_DIR_SW:
+        // Left - Start
+        leftMarkStart.x += 8;
+        leftMarkStart.y -= 4;
+        // Left - End
+        leftMarkEnd.x = leftMarkStart.x + 2;
+        leftMarkEnd.y = leftMarkStart.y + 2;
+        // Right - Start
+        rightMarkStart.x = leftMarkStart.x + 11;
+        rightMarkStart.y = leftMarkStart.y + 11;
+        // Right - End
+        rightMarkEnd.x = rightMarkStart.x - 4;
+        rightMarkEnd.y = rightMarkStart.y - 4;
+        break;
+    };
+    glLine(leftMarkStart.x, leftMarkStart.y, leftMarkEnd.x, leftMarkEnd.y, color);
+    glLine(rightMarkStart.x, rightMarkStart.y, rightMarkEnd.x, rightMarkEnd.y, color);
   }
 }
 
@@ -453,7 +587,7 @@ void Tank::reset() {
   turret->hide = false;
   explosion->hide = true;
 
-  setPosition(initial_position.x, initial_position.y);
+  setPosition(position_history[0].pos.x, position_history[0].pos.y);
   direction = T_DIR_N;
   body->rotation_angle = 0;
   turret->rotation_angle = 0;

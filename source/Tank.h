@@ -6,6 +6,7 @@
 #include "calico/types.h"
 #include "sprite-sheet.h"
 #include <nds.h>
+#include <vector>
 
 //---------------------------------------------------------------------------------
 //
@@ -84,7 +85,12 @@ enum TankBehavior {
 class Stage; // Avoids circular dependencies
 class Tank {
 private:
-  Position initial_position; // For testing purposes
+  struct PositionHistory {
+    Position pos;
+    TankDirection dir;
+  };
+  std::vector<PositionHistory> position_history;
+  int position_history_counter = 0;
 
   Stage *stage;
 
@@ -114,6 +120,11 @@ private:
    */
   bool validateMove(Position &pos);
 
+  /**
+   * @brief Appends current position and direction to history vector
+   */
+  void addPositionHistory();
+
 public:
   // Tank Component Sprites
   Sprite *body;
@@ -135,9 +146,8 @@ public:
 
   // Bullet related attributes
   BulletSpeed bullet_speed;                  // Speed of the bullets
-  static const int MAX_POSSIBLE_BULLETS = 5; // Max any one tank can have
-  Bullet *bullets[MAX_POSSIBLE_BULLETS];     // Hold the bullet sprites
-  int max_bullets = MAX_POSSIBLE_BULLETS;    // Default to player
+  std::vector<Bullet*> bullets;     // Hold the bullet sprites
+  int max_bullets = 5;    // Default to player
   int max_bullet_ricochets;
 
   /**
@@ -216,6 +226,11 @@ public:
    * @brief Updates the positions for any in-flight bullets
    */
   void updateBulletPositions();
+
+  /**
+   * @brief Draws the treadmarks for the tank on screen with gl2d
+   */
+  void drawTreadmarks();
 
   /**
    * @brief: Marks the tank for explosion so the necessary

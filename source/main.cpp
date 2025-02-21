@@ -56,7 +56,11 @@ void initGL2D() {
  * @brief Initializes the graphics system for 2D sprites.
  */
 void initGraphics() {
-  videoSetMode(MODE_5_3D);
+  videoSetMode(MODE_0_3D);
+
+  // Set up background for tread marks
+  REG_BG0CNT = BG_PRIORITY(3);  // Lower priority (appears behind)
+
   initSprites();
   initGL2D();
 }
@@ -93,12 +97,28 @@ void updateSprites(Stage *stage, Cursor *cursor) {
 /**
  * @brief Renders all bitmap drawings in OpenGL
  * @param stage the stage to update the drawings of
+ */
+void updateTreadBitmapGfx(Stage *stage) {
+  // All GL drawing happens here after sprites have been moved
+  glBegin2D();
+  // Update all the tank sprite positions
+  glPolyFmt(POLY_ALPHA(31) | POLY_CULL_NONE | POLY_ID(3));
+  for (int i = 0; i < stage->num_tanks; i++) {
+    stage->tanks[i]->drawTreadmarks();
+  }
+  glEnd2D();
+}
+
+/**
+ * @brief Renders all bitmap drawings in OpenGL
+ * @param stage the stage to update the drawings of
  * @param cursor the player's cursor sprite
  */
-void updateBitmapGfx(Stage *stage, Cursor *cursor) {
+void updateCursorBitmapGfx(Stage *stage, Cursor *cursor) {
   // All GL drawing happens here after sprites have been moved
   glBegin2D();
   // Draw dotted line to connect to tank
+  glPolyFmt(POLY_ALPHA(31) | POLY_CULL_NONE | POLY_ID(1));
   if (!cursor->hide) cursor->connectToTank(stage->tanks[0]);
   glEnd2D();
 }
@@ -126,10 +146,15 @@ int main(void) {
     // Handle all inputs
     handleButtonInput(stage);
     handleTouchInput(stage, cursor);
+
+    // Draw treads FIRST
+    updateTreadBitmapGfx(stage);
+
     // Update sprites in the Object Attribute Model
     updateSprites(stage, cursor);
+
     // Update any bitmap drawings
-    updateBitmapGfx(stage, cursor);
+    updateCursorBitmapGfx(stage, cursor);
 
     // Increment the frame counter
     Stage::frame_counter++;
