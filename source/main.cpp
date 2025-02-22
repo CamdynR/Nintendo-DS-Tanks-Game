@@ -40,9 +40,6 @@ void initSprites() {
  * @brief Initializes the graphics system for 2D bitmap drawing
  */
 void initGL2D() {
-  // Set up texture VRAM banks (using D for textures, E for palettes)
-  vramSetBankD(VRAM_D_TEXTURE);
-  vramSetBankE(VRAM_E_TEX_PALETTE);
   // Enable gl2d
   glScreen2D();
   // Prevent GL2D from drawing a black frame
@@ -78,18 +75,18 @@ void initGraphics() {
  */
 void updateSprites(Stage *stage, Cursor *cursor) {
   // Update the cursor first and foremost
-  if (!stage->tanks[0]->alive) cursor->hideSprites();
-  if (!cursor->hide) cursor->connectToTank(stage->tanks[0]);
+  if (!stage->tanks->at(0)->alive) cursor->hideSprites();
+  if (!cursor->hide) cursor->connectToTank(stage->tanks->at(0));
   cursor->updateOAM();
 
   // Update all the tank sprite positions
   for (int i = 0; i < stage->num_tanks; i++) {
-    stage->tanks[i]->updateOAM();
+    stage->tanks->at(i)->updateOAM();
 
     // Update positions of any active bullet sprites for each tank
-    for (int j = 0; j < stage->tanks[i]->max_bullets; j++) {
-      stage->tanks[i]->bullets[j]->updatePosition();
-      stage->tanks[i]->bullets[j]->updateOAM();
+    for (int j = 0; j < stage->tanks->at(i)->max_bullets; j++) {
+      stage->tanks->at(i)->bullets[j]->updatePosition();
+      stage->tanks->at(i)->bullets[j]->updateOAM();
     }
   }
 
@@ -105,7 +102,7 @@ void updateTreadBitmapGfx(Stage *stage) {
   // Update all the tank sprite positions
   glPolyFmt(POLY_ALPHA(31) | POLY_CULL_NONE | POLY_ID(2));
   for (int i = 0; i < stage->num_tanks; i++) {
-    stage->tanks[i]->drawTreadmarks();
+    stage->tanks->at(i)->drawTreadmarks();
   }
 }
 
@@ -139,7 +136,7 @@ int main(void) {
   Cursor *cursor = new Cursor();
 
   // Initialize the first stage
-  Stage *stage = new Stage(1);
+  Stage *stage = new Stage(4);
   stage->initBackground();
 
   while (pmMainLoop()) {

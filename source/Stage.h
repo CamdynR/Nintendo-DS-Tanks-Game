@@ -2,6 +2,7 @@
 #define STAGE_H
 
 #include "nds/arm9/video.h"
+#include <vector>
 
 class Tank;
 class Stage {
@@ -12,7 +13,7 @@ public:
   int num_tanks; // The number of tanks in the stage
 
   const int (*barriers)[SCREEN_WIDTH];
-  Tank **tanks; // Array of tank structs in the stage
+  std::vector<Tank *> *tanks = nullptr; // Array of tank structs in the stage
 
   Stage(int stageNum); // Constructor
 

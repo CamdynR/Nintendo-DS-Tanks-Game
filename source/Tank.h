@@ -125,6 +125,13 @@ private:
    */
   void addPositionHistory();
 
+  /**
+   * @brief Rotates the tank's body to face a certain direction. Used for setting
+   *        the initial tank's direction, not for rotating the tank mid match.
+   * @param direction The direction to face.
+   */
+  void faceDirection(TankDirection direction);
+
 public:
   // Tank Component Sprites
   Sprite *body;
@@ -152,8 +159,13 @@ public:
 
   /**
    * Struct constructor
+   * @param stage The stage the tank is on.
+    * @param x The x-coordinate of the tank to start at.
+    * @param y The y-coordinate of the tank to start at.
+    * @param color The color of the tank.
+    * @param direction The direction the tank is facing initially
    */
-  Tank(Stage *stage, int x, int y, TankColor color);
+  Tank(Stage *stage, int x, int y, TankColor color, TankDirection direction);
 
   /**
    * Struct deconstructor
@@ -161,90 +173,106 @@ public:
   ~Tank();
 
   /**
-   * @brief Sets the position of one of the axes for the tank
-   * @param axis The axis to set (x or y)
-   * @param value The value to set the axis to
+   * @brief Sets the position of one of the axes for the tank.
+   * @param axis The axis to set ('x' or 'y').
+   * @param value The value to set the axis to.
    */
   void setPosition(char axis, int value);
 
   /**
-   * @brief Sets the position of both axes for the tank
-   * @param x The x-coordinate
-   * @param y The y-coordinate
+   * @brief Sets the position of both axes for the tank.
+   * @param x The x-coordinate.
+   * @param y The y-coordinate.
    */
   void setPosition(int x, int y);
 
   /**
-   * @brief Gets the position of one of the axes for the tank
-   * @param axis The axis to get (x or y)
+   * @brief Gets the position of one of the axes for the tank.
+   * @param axis The axis to get ('x' or 'y').
+   * @return The position value of the specified axis.
    */
   int getPosition(char axis);
 
   /**
-   * @brief Gets the position of both of the axes for the tank
+   * @brief Gets the position of both of the axes for the tank.
+   * @return The position of the tank.
    */
   Position &getPosition();
 
   /**
-   * @brief Gets the position of both of the axes for the tank offset
-   *        by the tile offset
+   * @brief Gets the position of both of the axes for the tank offset by the tile offset.
+   * @return The offset position of the tank.
    */
   Position getOffsetPosition();
 
   /**
-   * @brief Sets the offset of both of the axes for the tank
+   * @brief Sets the offset of both of the axes for the tank.
+   * @param x The x-coordinate offset.
+   * @param y The y-coordinate offset.
    */
   void setOffset(int x, int y);
 
   /**
-   * @brief Uses LERP to smoothly rotate the tank body->in between
-   *        directions
+   * @brief Uses LERP to smoothly rotate the tank body in between directions.
    */
   void interpolateBodyRotation();
 
   /**
-   * Moves the tank in the specified direction.
+   * @brief Moves the tank in the specified direction.
+   * @param direction The direction to move the tank.
    */
   void move(TankDirection direction);
 
   /**
-   * Rotates the tank's turret to the touch position
+   * @brief Rotates the tank's turret towards a point on the screen.
+   * @param pos The position to rotate the turret towards.
+   */
+  void rotateTurret(Position pos);
+
+  /**
+   * @brief Rotates the tank's turret to the touch position.
+   * @param touch The touch position to rotate the turret towards.
    */
   void rotateTurret(touchPosition &touch);
 
   /**
-   * @brief Creates the bullet sprites and stores them in the bullets arrays
+   * @brief Rotates the tank's turret a certain number of degrees (starting from +y).
+   * @param angle The angle in degrees to rotate the turret.
+   */
+  void rotateTurret(int angle);
+
+  /**
+   * @brief Creates the bullet sprites and stores them in the bullets array.
    */
   void createBullets();
 
   /**
-   * @brief If bullets are available, fires them in the direction pointed
+   * @brief If bullets are available, fires them in the direction pointed.
    */
   void fire();
 
   /**
-   * @brief Updates the positions for any in-flight bullets
+   * @brief Updates the positions for any in-flight bullets.
    */
   void updateBulletPositions();
 
   /**
-   * @brief Draws the treadmarks for the tank on screen with gl2d
+   * @brief Draws the treadmarks for the tank on screen with gl2d.
    */
   void drawTreadmarks();
 
   /**
-   * @brief: Marks the tank for explosion so the necessary
-   *         animations can be played
+   * @brief Marks the tank for explosion so the necessary animations can be played.
    */
   void explode();
 
   /**
-   * @brief: For testing purposes, reset stage back to normal
+   * @brief For testing purposes, reset stage back to normal.
    */
   void reset();
 
   /**
-   * @brief Updates the OAM for both the tank body->and tank turret
+   * @brief Updates the OAM for both the tank body and tank turret.
    */
   void updateOAM();
 };

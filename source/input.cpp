@@ -28,16 +28,16 @@ void handleButtonInput(Stage *stage) {
   // For Testing
   if (keys_down & KEY_START) {
     for (int i = 0; i < stage->num_tanks; i++) {
-      stage->tanks[i]->reset();
+      stage->tanks->at(i)->reset();
     }
   } else if (keys_down & KEY_SELECT) {
     for (int i = 0; i < stage->num_tanks; i++) {
-      stage->tanks[i]->explode();
+      stage->tanks->at(i)->explode();
     }
   }
 
   // Grab a reference to the player tank
-  Tank *playerTank = stage->tanks[0];
+  Tank *playerTank = stage->tanks->at(0);
   // Don't perform any inputs if player is dead
   if (!playerTank->alive) return;
 
@@ -90,7 +90,7 @@ void handleButtonInput(Stage *stage) {
 
 void handleTouchInput(Stage *stage, Cursor *cursor) {
   // Grab a reference to the player tank
-  Tank *playerTank = stage->tanks[0];
+  Tank *playerTank = stage->tanks->at(0);
   // Don't perform any inputs if player is dead
   if (!playerTank->alive) return;
 
@@ -104,7 +104,7 @@ void handleTouchInput(Stage *stage, Cursor *cursor) {
   if (keys & KEY_TOUCH) {
     cursor->hide = false;                    // Show the cursor
     cursor->setPosition(touch.px, touch.py); // Update the cursor position
-    stage->tanks[0]->rotateTurret(touch);    // Rotate the tank turret
+    stage->tanks->at(0)->rotateTurret(touch);    // Rotate the tank turret
   } else {
     cursor->hideSprites(); // Hide the cursor and tail sprites
   }

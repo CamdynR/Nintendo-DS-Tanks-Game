@@ -84,7 +84,8 @@ export DEPSDIR := $(CURDIR)/$(BUILD)
 CFILES       := $(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
 CPPFILES     := $(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
 SFILES       := $(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
-PNGFILES     := $(foreach dir,$(BACKGROUNDS),$(notdir $(wildcard $(dir)/*.png)))
+BG_FILES     := $(foreach dir,$(BACKGROUNDS),$(notdir $(wildcard $(dir)/stage-*_bg.png)))
+BARRIER_FILES     := $(foreach dir,$(BACKGROUNDS),$(notdir $(wildcard $(dir)/stage-*_barriers.png)))
 BINFILES     := $(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*)))
 SPRITE_FILES :=  $(foreach dir, $(SPRITES),$(notdir $(wildcard $(dir)/*.png)))
 
@@ -123,7 +124,7 @@ endif
 #---------------------------------------------------------------------------------
 
 export OFILES   := $(addsuffix .o,$(BINFILES))\
-                   $(PNGFILES:.png=.o)\
+                   $(BG_FILES:.png=.o)\
                    $(SPRITE_FILES:.png=.o) \
                    $(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(SFILES:.s=.o)
 export INCLUDE  := $(foreach dir,$(INCLUDES),-iquote $(CURDIR)/$(dir))\
@@ -201,6 +202,14 @@ $(SOUNDBANK) : $(MODFILES)
 %.s %.h : sprites/%.png %.grit
 	grit $< -fts -o$*
 #---------------------------------------------------------------------------------
+
+# Create header files from barriers
+$(BUILD)/%.h: backgrounds/%.png
+	node utils/convert.js $< $@
+
+barrier-headers: $(addprefix $(BUILD)/,$(BARRIER_FILES:.png=.h))
+
+.PHONY: barrier-headers
 
 #---------------------------------------------------------------------------------
 # Convert non-GRF game icon to GRF if needed

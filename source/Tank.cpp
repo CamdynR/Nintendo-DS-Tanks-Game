@@ -48,16 +48,16 @@ bool Tank::isWithinBounds(Position &pos) {
 
 bool Tank::noTanksCollided(Position &pos) {
   for (int i = 0; i < stage->num_tanks; i++) {
-    if (this == stage->tanks[i]) continue; // Skip checking against itself
+    if (this == stage->tanks->at(i)) continue; // Skip checking against itself
 
     // Grab the tank position
-    Position tankPos = stage->tanks[i]->getPosition();
+    Position tankPos = stage->tanks->at(i)->getPosition();
 
     // Check for overlap on the x and y axes
     bool xOverlap = !(pos.x + width <= tankPos.x ||
-                      tankPos.x + stage->tanks[i]->width <= pos.x);
+                      tankPos.x + stage->tanks->at(i)->width <= pos.x);
     bool yOverlap = !(pos.y + height <= tankPos.y ||
-                      tankPos.y + stage->tanks[i]->height <= pos.y);
+                      tankPos.y + stage->tanks->at(i)->height <= pos.y);
 
     if (xOverlap && yOverlap) {
       return false; // Collision detected
@@ -78,9 +78,15 @@ bool Tank::noBarrierCollisions(Position &pos) {
     return false; // Out of bounds, treat as a collision
   }
 
-  // Check the four corners of the tank for barrier collisions
+  // Check the four corners of the tank for standard barrier collisions
   if (stage->barriers[y1][x1] == 1 || stage->barriers[y1][x2] == 1 ||
       stage->barriers[y2][x1] == 1 || stage->barriers[y2][x2] == 1) {
+    return false; // Collision detected
+  }
+
+  // Check the four corners of the tank for hole barrier collisions
+  if (stage->barriers[y1][x1] == 2 || stage->barriers[y1][x2] == 2 ||
+      stage->barriers[y2][x1] == 2 || stage->barriers[y2][x2] == 2) {
     return false; // Collision detected
   }
 
@@ -107,7 +113,7 @@ void Tank::addPositionHistory() {
 //
 //---------------------------------------------------------------------------------
 
-Tank::Tank(Stage *stage, int x, int y, TankColor color)
+Tank::Tank(Stage *stage, int x, int y, TankColor color, TankDirection direction)
     : stage(stage), color(color) {
   // Set tank attributes base on the tank color
   switch (color) {
@@ -241,6 +247,9 @@ Tank::Tank(Stage *stage, int x, int y, TankColor color)
 
   // Create and initialize the bullet sprites for this tank
   createBullets();
+
+  // Face tank in initial direction
+  faceDirection(direction);
 }
 
 Tank::~Tank() {
@@ -418,14 +427,31 @@ void Tank::move(TankDirection direction) {
   }
 }
 
-void Tank::rotateTurret(touchPosition &touch) {
+void Tank::rotateTurret(Position pos) {
   // Calculate the angle between the tank and the touch position
   Position center = getPosition();
   center.x += TANK_SIZE / 2;
   center.y += TANK_SIZE / 2;
-  float angle = calculateAngle(center.x, center.y, touch.px, touch.py);
+  float angle = calculateAngle(center.x, center.y, pos.x, pos.y);
   turret->rotation_angle = fmod(270 - angle, 360.0f);
   if (turret->rotation_angle < 0) turret->rotation_angle += 360.0f;
+}
+
+void Tank::rotateTurret(touchPosition &touch) {
+  rotateTurret({ touch.px, touch.py });
+}
+
+void Tank::rotateTurret(int angle) {
+  turret->rotation_angle = angle;
+}
+
+void Tank::faceDirection(TankDirection direction) {
+  // Set the tank's direction
+  this->direction = direction;
+  // Rotate the turret
+  turret->rotation_angle = direction;
+  // Rotate the tank body
+  body->rotation_angle = direction;
 }
 
 void Tank::createBullets() {
