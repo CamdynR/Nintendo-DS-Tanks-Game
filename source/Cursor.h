@@ -20,7 +20,22 @@ private:
   int height = 14;
   int width = 14;
   std::vector<Sprite*> tail;
-  int numTailSprites = 8;
+  int numTailSprites = 7;
+
+  /**
+   * @brief: Creates the necessary tail sprites for the cursor
+   */
+   void createTail();
+
+  /**
+   * @brief: Set the position of where to be on screen
+   */
+   void setPosition(Position &pos);
+
+  /**
+   * @brief: Draws the dotted line between the cursor and the tank
+   */
+  void connectToTank(Tank *playerTank);
 
 public:
   /**
@@ -29,19 +44,9 @@ public:
   Cursor();
 
   /**
-   * @brief: Set the position of where to be on screen
+   * @brief: Shows the cursor and tail sprites
    */
-  void setPosition(int x, int y);
-
-  /**
-   * @brief: Creates the necessary tail sprites for the cursor
-   */
-   void createTail();
-
-  /**
-   * @brief: Draws the dotted line between the cursor and the tank
-   */
-  void connectToTank(Tank *playerTank);
+  void showSprites(Position cursorPos, Tank *playerTank);
 
   /**
    * @brief: Hides the cursor and tail sprites

@@ -14,29 +14,9 @@ Camdyn Rasque
 
 //---------------------------------------------------------------------------------
 //
-// INITIALIZATION FUNCTIONS
+// INITIALIZATION FUNCTIONS - PRIVATE
 //
 //---------------------------------------------------------------------------------
-
-Cursor::Cursor() {
-  // Set sprite sheet position
-  this->sprite_sheet_pos = {0, 11};
-
-  // Assign an ID
-  this->id = Sprite::num_sprites++;
-  this->palette_alpha = this->id;
-  this->affine_index = -1;
-  // Hide until shown on screen
-  this->hide = true;
-  this->tile_offset = {16, 16};
-
-  // Create all of the tail sprites
-  createTail();
-
-  // Initialize graphics and copy to VRAM
-  initGfx();
-  copyGfxFrameToVRAM();
-}
 
 void Cursor::createTail() {
   for (int i = 0; i < numTailSprites; i++) {
@@ -61,7 +41,7 @@ void Cursor::createTail() {
   }
 }
 
-void Cursor::setPosition(int x, int y) { pos = {x, y}; }
+void Cursor::setPosition(Position &pos) { this->pos = pos; }
 
 void Cursor::connectToTank(Tank *playerTank) {
   // Grab the center of the player tank
@@ -72,20 +52,54 @@ void Cursor::connectToTank(Tank *playerTank) {
   // Math to connect the two points
   int dx = pos.x - tankCenterX;
   int dy = pos.y - tankCenterY;
-  float xIncrement = dx / (float)numTailSprites;
-  float yIncrement = dy / (float)numTailSprites;
+  float xIncrement = dx / (float)(numTailSprites + 2);
+  float yIncrement = dy / (float)(numTailSprites + 2);
   float x = tankCenterX;
   float y = tankCenterY;
 
   // Position each tail sprite along the line
-  for (int i = 0; i < numTailSprites; i++) {
-    // Update the position of each tail sprite
-    tail[i]->pos = { (int)x, (int)y };
-    tail[i]->hide = false;  // Make sure the sprite is visible
-
+  for (int i = 0; i < numTailSprites + 1; i++) {
     x += xIncrement;
     y += yIncrement;
+    if (i < 1) continue;
+    // Update the position of each tail sprite
+    tail[i - 1]->pos = { (int)x, (int)y };
+    tail[i - 1]->hide = false;  // Make sure the sprite is visible
   }
+}
+
+//---------------------------------------------------------------------------------
+//
+// INITIALIZATION FUNCTIONS - PUBLIC
+//
+//---------------------------------------------------------------------------------
+
+Cursor::Cursor() {
+  // Set sprite sheet position
+  this->sprite_sheet_pos = {0, 11};
+
+  // Assign an ID
+  this->id = Sprite::num_sprites++;
+  this->palette_alpha = this->id;
+  this->affine_index = -1;
+  // Hide until shown on screen
+  this->hide = true;
+  this->tile_offset = {16, 16};
+
+  // Create all of the tail sprites
+  createTail();
+
+  // Initialize graphics and copy to VRAM
+  initGfx();
+  copyGfxFrameToVRAM();
+}
+
+void Cursor::showSprites(Position cursorPos, Tank *playerTank) {
+  // Update the position first
+  setPosition(cursorPos);
+  // Then show the sprites
+  hide = false;
+  connectToTank(playerTank);
 }
 
 void Cursor::hideSprites() {

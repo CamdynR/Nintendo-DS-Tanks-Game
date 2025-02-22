@@ -92,7 +92,10 @@ void handleTouchInput(Stage *stage, Cursor *cursor) {
   // Grab a reference to the player tank
   Tank *playerTank = stage->tanks->at(0);
   // Don't perform any inputs if player is dead
-  if (!playerTank->alive) return;
+  if (!playerTank->alive) {
+    cursor->hideSprites();
+    return;
+  }
 
   // Scan for keys
   scanKeys();
@@ -102,8 +105,8 @@ void handleTouchInput(Stage *stage, Cursor *cursor) {
   touchRead(&touch);
   // Handle touch input
   if (keys & KEY_TOUCH) {
-    cursor->hide = false;                    // Show the cursor
-    cursor->setPosition(touch.px, touch.py); // Update the cursor position
+    // Show the cursor and tail sprites
+    cursor->showSprites({ touch.px, touch.py }, stage->tanks->at(0));
     stage->tanks->at(0)->rotateTurret(touch);    // Rotate the tank turret
   } else {
     cursor->hideSprites(); // Hide the cursor and tail sprites

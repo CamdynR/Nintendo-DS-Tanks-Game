@@ -75,8 +75,6 @@ void initGraphics() {
  */
 void updateSprites(Stage *stage, Cursor *cursor) {
   // Update the cursor first and foremost
-  if (!stage->tanks->at(0)->alive) cursor->hideSprites();
-  if (!cursor->hide) cursor->connectToTank(stage->tanks->at(0));
   cursor->updateOAM();
 
   // Update all the tank sprite positions
