@@ -78,7 +78,10 @@ void initGraphics() {
  */
 void updateSprites(Stage *stage, Cursor *cursor) {
   // Update the cursor first and foremost
+  if (!stage->tanks[0]->alive) cursor->hideSprites();
+  if (!cursor->hide) cursor->connectToTank(stage->tanks[0]);
   cursor->updateOAM();
+
   // Update all the tank sprite positions
   for (int i = 0; i < stage->num_tanks; i++) {
     stage->tanks[i]->updateOAM();
@@ -107,17 +110,6 @@ void updateTreadBitmapGfx(Stage *stage) {
 }
 
 /**
- * @brief Renders all bitmap drawings for the cursor in OpenGL
- * @param stage the stage to update the drawings of
- * @param cursor the player's cursor sprite
- */
-void updateCursorBitmapGfx(Stage *stage, Cursor *cursor) {
-  // Draw dotted line to connect to tank
-  glPolyFmt(POLY_ALPHA(31) | POLY_CULL_NONE | POLY_ID(0));
-  if (!cursor->hide) cursor->connectToTank(stage->tanks[0]);
-}
-
-/**
  * @brief Renders all bitmap drawings in OpenGL
  * @param stage the stage to update the drawings of
  * @param cursor the player's cursor sprite
@@ -127,8 +119,6 @@ void updateGl2dGfx(Stage *stage, Cursor *cursor) {
   glBegin2D();
   // Draw treads FIRST
   updateTreadBitmapGfx(stage);
-  // Update any bitmap drawings
-  updateCursorBitmapGfx(stage, cursor);
   // End 2D drawing
   glEnd2D();
 }

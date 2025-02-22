@@ -50,7 +50,7 @@ void Cursor::createTail() {
     tailSegment->affine_index = -1;
     // Hide until shown on screen
     tailSegment->hide = true;
-    tailSegment->tile_offset = {14, 14};
+    tailSegment->tile_offset = {15, 15};
 
     // Update the gfx
     tailSegment->initGfx();
